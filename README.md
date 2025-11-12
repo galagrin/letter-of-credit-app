@@ -1,36 +1,75 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## 🚀 Управление средой разработки
 
-## Getting Started
+Этот проект использует **Docker** для запуска базы данных PostgreSQL, чтобы среда разработки была чистой, изолированной и воспроизводимой.
 
-First, run the development server:
+### 1. Запуск окружения
+
+Чтобы начать работу, нужно запустить два компонента: базу данных в Docker и сам Next.js проект.
+
+#### Шаг 1.1: Запуск базы данных (PostgreSQL)
+
+В терминале, в корневой папке проекта, выполните команду:
+
+```bash
+docker-compose up -d
+```
+
+-   `up`: Команда для запуска сервисов, описанных в `docker-compose.yml`.
+-   `-d` (detached): Запускает контейнер в фоновом режиме, освобождая ваш терминал.
+
+**Как проверить, что база данных запущена?**
+Выполните `docker ps`. Вы должны увидеть контейнер с именем, содержащим `postgres`.
+
+#### Шаг 1.2: Запуск Next.js приложения
+
+После того как база данных запущена, откройте **новый терминал** (или используйте тот же) и запустите Next.js в режиме разработки:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+После этого ваш сайт будет доступен по адресу [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 2. Остановка окружения
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Когда вы закончили работу, рекомендуется остановить контейнер с базой данных, чтобы он не потреблял ресурсы компьютера.
 
-## Learn More
+В терминале, в корневой папке проекта, выполните команду:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+docker-compose down
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 3. Работа с базой данных (Prisma)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Все команды `prisma` в этом проекте нужно запускать с помощью `dotenv-cli` для корректной загрузки переменных окружения.
 
-## Deploy on Vercel
+#### Создание новой миграции
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Когда вы вносите изменения в файл `prisma/schema.prisma` (например, добавляете новую модель или поле), вам нужно создать и применить миграцию:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npx dotenv -- npx prisma migrate dev --name <migration_name>
+```
+
+_Замените `<migration_name>` на осмысленное название, например, `add_post_model`._
+
+#### Генерация Prisma Client
+
+Если нужно просто перегенерировать клиент после изменений в схеме (без изменения структуры БД), используйте:
+
+```bash
+npx dotenv -- npx prisma generate
+```
+
+#### Просмотр данных в базе
+
+Prisma предоставляет удобный инструмент **Prisma Studio** для просмотра и редактирования данных в веб-интерфейсе.
+
+```bash
+npx dotenv -- npx prisma studio
+```
+
+Эта команда откроет в вашем браузере страницу, где вы сможете увидеть таблицы, записи и управлять ими.
+
+---
