@@ -12,15 +12,16 @@ async function main() {
     if (!adminEmail || !adminPassword) {
         throw new Error("Please provide SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD in your .env file");
     }
+    const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
     const admin = await prisma.user.upsert({
         where: { email: adminEmail },
-        update: {},
+        update: { passwordHash: hashedPassword, role: 'ADMIN' },
         create: {
             email: adminEmail,
             name: "Admin User",
-            passwordHash: bcrypt.hashSync(adminPassword, 10),
-            //role: Role.ADMIN,
+            passwordHash: hashedPassword,
+            role: 'ADMIN',
         },
     });
 
