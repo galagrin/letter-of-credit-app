@@ -16,16 +16,28 @@ async function main() {
 
     const admin = await prisma.user.upsert({
         where: { email: adminEmail },
-        update: { passwordHash: hashedPassword, role: 'ADMIN' },
+        update: { passwordHash: hashedPassword, role: "ADMIN" },
         create: {
             email: adminEmail,
             name: "Admin User",
             passwordHash: hashedPassword,
-            role: 'ADMIN',
+            role: "ADMIN",
+        },
+    });
+    console.log(`Created/found admin user: ${admin.email}`);
+
+    const companyName = "ООО ABC";
+    console.log(`Upserting company: ${companyName}...`);
+    const company = await prisma.company.upsert({
+        where: { name: companyName },
+        update: { taxId: "1234567890" },
+        create: {
+            name: companyName,
+            taxId: "1234567890",
         },
     });
 
-    console.log(`Created/found admin user: ${admin.email}`);
+    console.log(`Created/found company: ${company.name}`);
     console.log("Seeding finished.");
 }
 main()

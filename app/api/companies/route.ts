@@ -1,15 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { Prisma } from "@prisma/client"; //пространство имен типов из библиотеки Prisma
 import { prisma } from "@/lib/prisma"; //экземпляр клиента Prisma
+import { Prisma } from "@prisma/client"; //пространство имен типов из библиотеки Prisma
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
 
-const bankSchema = z.object({
-    name: z.string().min(3, "Название банка слишком короткое"),
-    BIC: z.string().startsWith("04").min(9, { message: "BIC должен быть не менее 9 символов" }).optional(),
-    SWIFT: z.string().min(8, { message: "Swift должен быть не менее 8 символов" }).optional(),
-    country: z.string(),
+const companySchema = z.object({
+    name: z.string().min(3, "Название компании слишком короткое"),
+    taxId: z.string().min(10, { message: "ИНН должен содержать не менее 10 символов" }).optional(),
 });
 
 export async function POST(request: Request) {
@@ -20,20 +18,19 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const validation = bankSchema.safeParse(body);
+    const validation = companySchema.safeParse(body);
 
     if (!validation.success) {
         return NextResponse.json({ error: "Неверные данные", details: validation.error.flatten() }, { status: 400 });
     }
 
     try {
-        const newBank = await prisma.bank.create({ data: validation.data });
-        return NextResponse.json(newBank, { status: 201 });
+        const newCompany = await prisma.company.create({ data: validation.data });
+        return NextResponse.json(newCompany, { status: 201 });
     } catch (error) {
-        // Prisma при нарушении unique-ограничения выдает ошибку с кодом P2002
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
             if (error.code === "P2002") {
-                return NextResponse.json({ error: "Бнк с таким именем уже существует" }, { status: 409 });
+                return NextResponse.json({ error: "Компания с таким именем уже существует" }, { status: 409 });
             }
         }
         return NextResponse.json({ error: "Произошла ошибка на сервере" }, { status: 500 });
@@ -47,6 +44,6 @@ export async function GET() {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const banks = await prisma.bank.findMany();
-    return NextResponse.json(banks);
+    const companies = await prisma.company.findMany();
+    return NextResponse.json(companies);
 }
