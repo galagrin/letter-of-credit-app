@@ -5,7 +5,7 @@ import { Prisma } from "@prisma/client"; //пространство имен т�
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
-type SupportedModel = "bank" | "company" | "user";
+type SupportedModel = "bank" | "company";
 
 interface CrudOptions<T extends ZodType> {
     model: SupportedModel;
@@ -42,10 +42,6 @@ export function createCrudHandlers<T extends ZodType>({ model, schema, modelName
                         data: validation.data as z.infer<T>,
                     });
                     break;
-                case "user":
-                    newItem = await prisma.user.create({
-                        data: validation.data as z.infer<T>,
-                    });
                 default:
                     throw new Error(`Unsupported model: ${model}`);
             }
