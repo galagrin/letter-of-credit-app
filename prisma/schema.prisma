@@ -46,6 +46,8 @@ model Company {
   id            Int              @id @default(autoincrement())
   name          String           @unique
   taxId         String?          @unique // ИНН 
+  country String 
+
   
   //applicantLCs  LetterOfCredit[] @relation("Applicant")
   //beneficiaryLCs LetterOfCredit[] @relation("Beneficiary")
@@ -56,7 +58,7 @@ model Company {
   //referenceNumber String?   @unique 
 
   //amount          Decimal   
-  //currency        String    
+  //currency        Currency  @default(RUB)   
   //issueDate       DateTime  
   //expiryDate      DateTime  
   //isConfirmed     Boolean   @default(false)
@@ -95,3 +97,11 @@ model Company {
   //@@index([issuingBankId])
   //@@index([createdById])
 //}
+
+enum Currency{
+  RUB
+  USD
+  EUR
+  CNY
+  INR
+}

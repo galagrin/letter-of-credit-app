@@ -12,8 +12,8 @@ export const authOptions: AuthOptions = {
                 password: { label: "Password", type: "password" },
             },
             async authorize(credentials) {
-                console.log("--- Authorize function called ---");
-                console.log("Credentials received:", credentials);
+                // console.log("--- Authorize function called ---");
+                // console.log("Credentials received:", credentials);
 
                 if (!credentials?.email || !credentials?.password) {
                     // console.log("Missing email or password.");

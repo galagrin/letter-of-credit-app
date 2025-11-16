@@ -30,10 +30,11 @@ async function main() {
     console.log(`Upserting company: ${companyName}...`);
     const company = await prisma.company.upsert({
         where: { name: companyName },
-        update: { taxId: "1234567890" },
+        update: { taxId: "1234567890", country: "Россия" },
         create: {
             name: companyName,
             taxId: "1234567890",
+            country: "Россия",
         },
     });
 
