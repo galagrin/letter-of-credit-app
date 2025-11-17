@@ -24,7 +24,7 @@ const createLcSchema = z.object({
 
 export async function POST(request: Request) {
     const session = await getServerSession(authOptions);
-    if (!session || session.user?.id) {
+    if (!session || !session.user?.id) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     try {
