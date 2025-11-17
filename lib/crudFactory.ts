@@ -6,7 +6,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 type SupportedModel = "bank" | "company";
-
+type RouteParams = { params: Promise<{ id: string }> };
 interface CrudOptions<T extends ZodType> {
     model: SupportedModel;
     schema: T;
@@ -80,14 +80,15 @@ export function createCrudHandlers<T extends ZodType>({ model, schema, modelName
     };
 
     // DELETE
-    const DELETE = async (request: Request, { params }: { params: { id: string } }) => {
+    const DELETE = async (request: Request, context: RouteParams) => {
         const session = await getServerSession(authOptions);
         if (!session || session.user.role !== "ADMIN") {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
+        const { id: idStr } = await context.params;
+        const id = parseInt(idStr);
         try {
-            const id = parseInt(params.id);
             switch (model) {
                 case "bank":
                     await prisma.bank.delete({
@@ -103,13 +104,10 @@ export function createCrudHandlers<T extends ZodType>({ model, schema, modelName
                     throw new Error(`Unsupported model: ${model}`);
             }
 
-            await prisma.bank.delete({
-                where: { id: parseInt(params.id) },
-            });
             return new NextResponse(null, { status: 204 }); // 204 No Content
         } catch (error) {
             if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
-                return NextResponse.json({ error: `${modelName} с ID ${params.id} не найден` }, { status: 404 });
+                return NextResponse.json({ error: `${modelName} с ID ${id} не найден` }, { status: 404 });
             }
             console.error(`Error creating ${modelName}:`, error);
             return NextResponse.json({ error: "Произошла ошибка на сервере" }, { status: 500 });
@@ -117,11 +115,15 @@ export function createCrudHandlers<T extends ZodType>({ model, schema, modelName
     };
 
     // PUT
-    const PUT = async (request: Request, { params }: { params: { id: string } }) => {
+    const PUT = async (request: Request, context: RouteParams) => {
         const session = await getServerSession(authOptions);
         if (!session || session.user.role !== "ADMIN") {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
+
+        const { id: idStr } = await context.params;
+        const id = parseInt(idStr);
+
         const body = await request.json();
         const validation = schema.safeParse(body);
 
@@ -136,13 +138,13 @@ export function createCrudHandlers<T extends ZodType>({ model, schema, modelName
             switch (model) {
                 case "bank":
                     updatedItem = await prisma.bank.update({
-                        where: { id: parseInt(params.id) },
+                        where: { id },
                         data: validation.data as z.infer<T>,
                     });
                     break;
                 case "company":
                     updatedItem = await prisma.company.update({
-                        where: { id: parseInt(params.id) },
+                        where: { id },
                         data: validation.data as z.infer<T>,
                     });
                     break;

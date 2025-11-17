@@ -8,7 +8,7 @@ import { getServerSession } from "next-auth";
 const createLcSchema = z.object({
     referenceNumber: z.string().optional(),
     amount: z.number().positive("Сумма должна быть положительным числом"),
-    currency: z.nativeEnum(Currency),
+    currency: z.enum(Currency),
     issueDate: z.string().datetime(),
     expiryDate: z.string().datetime(),
     isConfirmed: z.boolean().optional().default(false),
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
                 ...(nominatedBankId && { nominatedBank: { connect: { id: nominatedBankId } } }),
 
                 // Связываем с пользователем, который создал запись
-                createdBy: { connect: { id: parseInt(session.user.id) } },
+                createdBy: { connect: { id: parseInt(session.user!.id) } },
             },
         });
         return NextResponse.json(newLc, { status: 201 });
