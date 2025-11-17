@@ -1,6 +1,5 @@
-
 generator client {
-  provider = "prisma-client-js" 
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -9,96 +8,89 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  passwordHash    String
-  name      String?
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  role         Role     @default(USER)
 
-  role Role @default(USER)
+  createdLCs   LetterOfCredit[] 
 
-  //createdLCs      LetterOfCredit[] 
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
-enum Role{
+
+enum Role {
   USER
   ADMIN
 }
 
-model Bank{
-  id        Int      @id @default(autoincrement())
-  name String @unique
-  BIC String? @unique
-  SWIFT String? @unique
-  country String 
+model Bank {
+  id           Int      @id @default(autoincrement())
+  name         String   @unique
+  BIC          String?  @unique
+  SWIFT        String?  @unique
+  country      String
 
-  //issuedLCs LetterOfCredit[] @relation("Issuing Bank")
-
-  //advisedLCs LetterOfCredit[] @relation("Advising Bank")
-
-  //confirmedLCs LetterOfCredit[] @relation("Confirming Bank")
-
-  //nominatedLCs LetterOfCredit[] @relation("Nominating Bank")
+  // ИСПРАВЛЕНО: используем PascalCase без пробелов
+  issuedLCs    LetterOfCredit[] @relation("IssuingBank")
+  advisedLCs   LetterOfCredit[] @relation("AdvisingBank")
+  confirmedLCs LetterOfCredit[] @relation("ConfirmingBank")
+  nominatedLCs LetterOfCredit[] @relation("NominatedBank")
 }
 
 model Company {
-  id            Int              @id @default(autoincrement())
-  name          String           @unique
-  taxId         String?          @unique // ИНН 
-  country String 
+  id             Int              @id @default(autoincrement())
+  name           String           @unique
+  taxId          String?          @unique
+  country        String
 
-  
-  //applicantLCs  LetterOfCredit[] @relation("Applicant")
-  //beneficiaryLCs LetterOfCredit[] @relation("Beneficiary")
+  applicantLCs   LetterOfCredit[] @relation("Applicant")
+  beneficiaryLCs LetterOfCredit[] @relation("Beneficiary")
 }
 
-//model LetterOfCredit {
-  //id              String    @id @default(cuid())
-  //referenceNumber String?   @unique 
+model LetterOfCredit {
+  id              String    @id @default(cuid())
+  referenceNumber String?   @unique
 
-  //amount          Decimal   
-  //currency        Currency  @default(RUB)   
-  //issueDate       DateTime  
-  //expiryDate      DateTime  
-  //isConfirmed     Boolean   @default(false)
-
-  //applicantId     Int
-  //applicant       Company   @relation("Applicant", fields: [applicantId], references: [id])
-  
-  //beneficiaryId   Int
-  //beneficiary     Company   @relation("Beneficiary", fields: [beneficiaryId], references: [id])
+  amount          Decimal
+  currency        Currency  @default(RUB)
+  issueDate       DateTime
+  expiryDate      DateTime
+  isConfirmed     Boolean   @default(false)
 
 
-  //issuingBankId   Int
-  //issuingBank     Bank      @relation("IssuingBank", fields: [issuingBankId], references: [id])
+  applicantId     Int
+  applicant       Company   @relation("Applicant", fields: [applicantId], references: [id])
+  beneficiaryId   Int
+  beneficiary     Company   @relation("Beneficiary", fields: [beneficiaryId], references: [id])
+
+  issuingBankId   Int
+  issuingBank     Bank      @relation("IssuingBank", fields: [issuingBankId], references: [id])
+
+  advisingBankId  Int?
+  advisingBank    Bank?     @relation("AdvisingBank", fields: [advisingBankId], references: [id])
+
+  confirmingBankId Int?
+  confirmingBank   Bank?    @relation("ConfirmingBank", fields: [confirmingBankId], references: [id])
+
+  nominatedBankId  Int?
+  nominatedBank    Bank?    @relation("NominatedBank", fields: [nominatedBankId], references: [id])
 
 
-  //advisingBankId  Int?
-  //advisingBank    Bank?     @relation("AdvisingBank", fields: [advisingBankId], references: [id])
+  createdById     Int
+  createdBy       User      @relation(fields: [createdById], references: [id])
 
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  //confirmingBankId Int?
-  //confirmingBank   Bank?    @relation("ConfirmingBank", fields: [confirmingBankId], references: [id])
+  @@index([applicantId])
+  @@index([beneficiaryId])
+  @@index([issuingBankId])
+  @@index([createdById])
+}
 
-
-  //nominatedBankId  Int?
-  //nominatedBank    Bank?    @relation("NominatedBank", fields: [nominatedBankId], references: [id])
-
-
-  //createdById     Int
-  //createdBy       User      @relation(fields: [createdById], references: [id])
-
-  //createdAt       DateTime  @default(now())
-  //updatedAt       DateTime  @updatedAt
-
-  //@@index([applicantId])
-  //@@index([beneficiaryId])
-  //@@index([issuingBankId])
-  //@@index([createdById])
-//}
-
-enum Currency{
+enum Currency {
   RUB
   USD
   EUR
