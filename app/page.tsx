@@ -6,7 +6,8 @@ export default async function HomePage() {
     const session = await getServerSession(authOptions);
 
     return (
-        <div style={{ padding: "2rem", maxWidth: "600px", margin: "2rem auto" }}>
+        <div style={{ padding: "2rem", maxWidth: "600px", margin: "2rem auto", textAlign: "center" }}>
+            <h1>Добро пожаловать в LC-App!</h1>
             {session ? (
                 <div>
                     <h2>Вы вошли как: {session.user?.name || session.user?.email}</h2>
