@@ -21,7 +21,7 @@ export default async function BanksPage() {
     });
 
     return (
-        <div>
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", flexDirection: "column" }}>
             <h1>Управление банками</h1>
             <BankManager initialBanks={banks} />
         </div>
