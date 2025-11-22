@@ -2,7 +2,15 @@
 
 import { useState } from "react";
 import { Bank } from "@prisma/client";
+import { Modal } from "./Modal";
+import { useForm } from "react-hook-form";
 
+type BankFormData = {
+    name: string;
+    country: string;
+    BIC: string | null;
+    SWIFT: string | null;
+};
 type BankManagerProps = {
     initialBanks: Bank[];
 };
@@ -31,6 +39,8 @@ const actionsCellStyles = {
 };
 export const BankManager = ({ initialBanks }: BankManagerProps) => {
     const [banks, setBanks] = useState(initialBanks);
+    const [editingBank, setEditingBank] = useState<Bank | null>(null);
+    const { register, handleSubmit, formState, reset } = useForm<BankFormData>();
 
     async function handleDelete(id: number) {
         if (!window.confirm("Вы уверены, что хотите удалить этот банк?")) {
@@ -47,6 +57,33 @@ export const BankManager = ({ initialBanks }: BankManagerProps) => {
             });
         }
     }
+    function handleEditBank(bank: Bank) {
+        setEditingBank(bank);
+        reset(bank);
+    }
+
+    function handleCloseModal() {
+        setEditingBank(null);
+    }
+
+    async function onSubmit(data: BankFormData) {
+        console.log(data);
+        if (!editingBank) return;
+        const response = await fetch(`/api/banks/${editingBank.id}`, {
+            method: "PUT",
+            body: JSON.stringify(data),
+            headers: { "Content-Type": "application/json" },
+        });
+        if (!response.ok) {
+            alert("Ошибка при редактировании банка");
+            return;
+        } else {
+            const updatedBank = await response.json();
+            setBanks(banks.map((bank) => (bank.id === updatedBank.id ? updatedBank : bank)));
+            handleCloseModal();
+        }
+    }
+
     return (
         <table style={tableStyles}>
             <thead>
@@ -72,7 +109,39 @@ export const BankManager = ({ initialBanks }: BankManagerProps) => {
                             >
                                 Удалить
                             </button>
-                            <button>Изменить</button>
+                            <button onClick={() => handleEditBank(bank)}>Изменить</button>
+                            {editingBank && (
+                                <Modal isOpen={!!editingBank} onClose={handleCloseModal}>
+                                    <h2>Редактирование банка: {editingBank.name}</h2>
+                                    <form onSubmit={handleSubmit(onSubmit)}>
+                                        <div className="form-field">
+                                            <label className="form-label">Название</label>
+                                            <input
+                                                className="form-input"
+                                                {...register("name", { required: true, minLength: 3 })}
+                                            />
+                                        </div>
+                                        <div className="form-field">
+                                            <label className="form-label">Страна</label>
+                                            <input
+                                                className="form-input"
+                                                {...register("country", { required: true, minLength: 3 })}
+                                            />
+                                        </div>
+                                        <div className="form-field">
+                                            <label className="form-label">BIC</label>
+                                            <input className="form-input" {...register("BIC")} />
+                                        </div>
+                                        <div className="form-field">
+                                            <label className="form-label">SWIFT</label>
+                                            <input className="form-input" {...register("SWIFT")} />
+                                        </div>
+                                        <button type="submit" disabled={formState.isSubmitting}>
+                                            Submit
+                                        </button>
+                                    </form>
+                                </Modal>
+                            )}
                         </td>
                     </tr>
                 ))}
