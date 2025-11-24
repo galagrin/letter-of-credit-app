@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Bank } from "@prisma/client";
 import { Modal } from "./Modal";
 import { useForm } from "react-hook-form";
-import { BankEditForm } from "./BankEditForm";
+import { BankEditForm } from "./BankForm";
 
 type BankFormData = {
     name: string;
@@ -59,7 +59,7 @@ export const BankManager = ({ initialBanks }: BankManagerProps) => {
             });
         }
     }
-    function handleEditBank(bank: Bank) {
+    function openEditModal(bank: Bank) {
         setEditingBank(bank);
         reset(bank);
     }
@@ -68,7 +68,7 @@ export const BankManager = ({ initialBanks }: BankManagerProps) => {
         setEditingBank(null);
     }
 
-    async function onEditFormSubmit(data: BankFormData) {
+    async function handleEditBank(data: BankFormData) {
         if (!editingBank) return;
         const response = await fetch(`/api/banks/${editingBank.id}`, {
             method: "PUT",
@@ -105,7 +105,7 @@ export const BankManager = ({ initialBanks }: BankManagerProps) => {
     return (
         <>
             <div style={{ marginBottom: "1rem" }}>
-                <button onClick={() => setIsCreateModalOpen(true)}>+ Добавить новый банк</button>
+                <button onClick={() => setIsCreateModalOpen(true)}> Добавить новый банк</button>
             </div>
             <table style={tableStyles}>
                 <thead>
@@ -131,15 +131,23 @@ export const BankManager = ({ initialBanks }: BankManagerProps) => {
                                 >
                                     Удалить
                                 </button>
-                                <button onClick={() => handleEditBank(bank)}>Изменить</button>
+                                <button onClick={() => openEditModal(bank)}>Изменить</button>
                                 {editingBank && (
                                     <Modal isOpen={!!editingBank} onClose={handleCloseModal}>
-                                        <BankEditForm bank={editingBank} onFormSubmit={onEditFormSubmit} />
+                                        <BankEditForm
+                                            bank={editingBank}
+                                            onFormSubmit={handleEditBank}
+                                            onCancel={() => setEditingBank(null)}
+                                        />
                                     </Modal>
                                 )}
                                 {isCreateModalOpen && (
                                     <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)}>
-                                        <div></div>
+                                        <BankEditForm
+                                            bank={null}
+                                            onFormSubmit={handleCreateBank}
+                                            onCancel={() => setIsCreateModalOpen(false)}
+                                        />
                                     </Modal>
                                 )}
                             </td>

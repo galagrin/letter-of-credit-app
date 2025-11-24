@@ -3,18 +3,28 @@
 import { Bank } from "@prisma/client";
 import { useForm } from "react-hook-form";
 
-type BankFormData = Omit<Bank, "id">;
+type BankFormData = Omit<Bank, "id" | "createdAt" | "updatedAt">;
+
 type BankEditProps = {
-    bank: Bank;
+    bank?: Bank | null;
     onFormSubmit: (data: BankFormData) => Promise<void>;
+    onCancel: () => void;
 };
 
-export const BankEditForm = ({ bank, onFormSubmit }: BankEditProps) => {
-    const { register, handleSubmit, formState } = useForm<BankFormData>({ defaultValues: bank });
+export const BankEditForm = ({ bank, onFormSubmit, onCancel }: BankEditProps) => {
+    const { register, handleSubmit, formState } = useForm<BankFormData>({
+        defaultValues: bank || {
+            name: "",
+            country: "",
+            BIC: "",
+            SWIFT: "",
+        },
+    });
 
+    const isEditing = !!bank;
     return (
         <>
-            <h2>Редактирование банка: {bank.name}</h2>
+            <h2>{isEditing ? `Редактирование банка: ${bank.name}` : "Добавление банка"}</h2>
             <form onSubmit={handleSubmit(onFormSubmit)}>
                 <div className="form-field">
                     <label className="form-label">Название</label>
@@ -33,7 +43,10 @@ export const BankEditForm = ({ bank, onFormSubmit }: BankEditProps) => {
                     <input className="form-input" {...register("SWIFT")} />
                 </div>
                 <button type="submit" disabled={formState.isSubmitting}>
-                    Submit
+                    {isEditing ? "Сохранить" : "Создать"}
+                </button>
+                <button type="button" onClick={onCancel}>
+                    Отмена
                 </button>
             </form>
         </>
