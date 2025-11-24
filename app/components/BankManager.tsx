@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Bank } from "@prisma/client";
 import { Modal } from "./Modal";
 import { useForm } from "react-hook-form";
+import { BankEditForm } from "./BankEditForm";
 
 type BankFormData = {
     name: string;
@@ -40,7 +41,8 @@ const actionsCellStyles = {
 export const BankManager = ({ initialBanks }: BankManagerProps) => {
     const [banks, setBanks] = useState(initialBanks);
     const [editingBank, setEditingBank] = useState<Bank | null>(null);
-    const { register, handleSubmit, formState, reset } = useForm<BankFormData>();
+    const { reset } = useForm<BankFormData>();
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
     async function handleDelete(id: number) {
         if (!window.confirm("Вы уверены, что хотите удалить этот банк?")) {
@@ -66,8 +68,7 @@ export const BankManager = ({ initialBanks }: BankManagerProps) => {
         setEditingBank(null);
     }
 
-    async function onSubmit(data: BankFormData) {
-        console.log(data);
+    async function onEditFormSubmit(data: BankFormData) {
         if (!editingBank) return;
         const response = await fetch(`/api/banks/${editingBank.id}`, {
             method: "PUT",
@@ -81,71 +82,71 @@ export const BankManager = ({ initialBanks }: BankManagerProps) => {
             const updatedBank = await response.json();
             setBanks(banks.map((bank) => (bank.id === updatedBank.id ? updatedBank : bank)));
             handleCloseModal();
+            setEditingBank(null);
         }
     }
 
+    async function handleCreateBank(data: BankFormData) {
+        const response = await fetch(`/api/banks`, {
+            method: "POST",
+            body: JSON.stringify(data),
+            headers: { "Content-Type": "application/json" },
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            alert(`Ошибка при создании: ${error.error}`);
+        } else {
+            const newBank = await response.json();
+            setBanks([...banks, newBank]);
+            setIsCreateModalOpen(false);
+        }
+    }
     return (
-        <table style={tableStyles}>
-            <thead>
-                <tr>
-                    <th style={thStyles}>Название</th>
-                    <th style={thStyles}>Страна</th>
-                    <th style={thStyles}>БИК</th>
-                    <th style={thStyles}>SWIFT</th>
-                    <th style={thStyles}>Действия</th>
-                </tr>
-            </thead>
-            <tbody>
-                {banks.map((bank) => (
-                    <tr key={bank.id}>
-                        <td style={tdStyles}>{bank.name}</td>
-                        <td style={tdStyles}>{bank.country}</td>
-                        <td style={tdStyles}>{bank.BIC || "—"}</td>
-                        <td style={tdStyles}>{bank.SWIFT || "—"}</td>
-                        <td style={actionsCellStyles}>
-                            <button
-                                onClick={() => handleDelete(bank.id)}
-                                style={{ color: "red", marginRight: "8px", cursor: "pointer" }}
-                            >
-                                Удалить
-                            </button>
-                            <button onClick={() => handleEditBank(bank)}>Изменить</button>
-                            {editingBank && (
-                                <Modal isOpen={!!editingBank} onClose={handleCloseModal}>
-                                    <h2>Редактирование банка: {editingBank.name}</h2>
-                                    <form onSubmit={handleSubmit(onSubmit)}>
-                                        <div className="form-field">
-                                            <label className="form-label">Название</label>
-                                            <input
-                                                className="form-input"
-                                                {...register("name", { required: true, minLength: 3 })}
-                                            />
-                                        </div>
-                                        <div className="form-field">
-                                            <label className="form-label">Страна</label>
-                                            <input
-                                                className="form-input"
-                                                {...register("country", { required: true, minLength: 3 })}
-                                            />
-                                        </div>
-                                        <div className="form-field">
-                                            <label className="form-label">BIC</label>
-                                            <input className="form-input" {...register("BIC")} />
-                                        </div>
-                                        <div className="form-field">
-                                            <label className="form-label">SWIFT</label>
-                                            <input className="form-input" {...register("SWIFT")} />
-                                        </div>
-                                        <button type="submit" disabled={formState.isSubmitting}>
-                                            Submit
-                                        </button>
-                                    </form>
-                                </Modal>
-                            )}
-                        </td>
+        <>
+            <div style={{ marginBottom: "1rem" }}>
+                <button onClick={() => setIsCreateModalOpen(true)}>+ Добавить новый банк</button>
+            </div>
+            <table style={tableStyles}>
+                <thead>
+                    <tr>
+                        <th style={thStyles}>Название</th>
+                        <th style={thStyles}>Страна</th>
+                        <th style={thStyles}>БИК</th>
+                        <th style={thStyles}>SWIFT</th>
+                        <th style={thStyles}>Действия</th>
                     </tr>
-                ))}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    {banks.map((bank) => (
+                        <tr key={bank.id}>
+                            <td style={tdStyles}>{bank.name}</td>
+                            <td style={tdStyles}>{bank.country}</td>
+                            <td style={tdStyles}>{bank.BIC || "—"}</td>
+                            <td style={tdStyles}>{bank.SWIFT || "—"}</td>
+                            <td style={actionsCellStyles}>
+                                <button
+                                    onClick={() => handleDelete(bank.id)}
+                                    style={{ color: "red", marginRight: "8px", cursor: "pointer" }}
+                                >
+                                    Удалить
+                                </button>
+                                <button onClick={() => handleEditBank(bank)}>Изменить</button>
+                                {editingBank && (
+                                    <Modal isOpen={!!editingBank} onClose={handleCloseModal}>
+                                        <BankEditForm bank={editingBank} onFormSubmit={onEditFormSubmit} />
+                                    </Modal>
+                                )}
+                                {isCreateModalOpen && (
+                                    <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)}>
+                                        <div></div>
+                                    </Modal>
+                                )}
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </>
     );
 };
