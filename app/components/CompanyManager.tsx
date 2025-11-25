@@ -1,19 +1,14 @@
 "use client";
 
+import { Company } from "@prisma/client";
 import { useState } from "react";
-import { Bank } from "@prisma/client";
-import { Modal } from "./Modal";
 import { useForm } from "react-hook-form";
-import { BankForm } from "./BankForm";
+import { Modal } from "./Modal";
+import { CompanyForm } from "./CompanyForm";
 
-type BankFormData = {
-    name: string;
-    country: string;
-    BIC: string | null;
-    SWIFT: string | null;
-};
-type BankManagerProps = {
-    initialBanks: Bank[];
+type CompanyFormData = Omit<Company, "id">;
+type CompanyManagerProps = {
+    initialCompanies: Company[];
 };
 
 // Стили для таблицы (todo: вынести в CSS)
@@ -38,39 +33,42 @@ const actionsCellStyles = {
     width: "150px",
     textAlign: "center" as const,
 };
-export const BankManager = ({ initialBanks }: BankManagerProps) => {
-    const [banks, setBanks] = useState(initialBanks);
-    const [editingBank, setEditingBank] = useState<Bank | null>(null);
-    const { reset } = useForm<BankFormData>();
+export const CompanyManager = ({ initialCompanies }: CompanyManagerProps) => {
+    const [companies, setCompanies] = useState(initialCompanies);
+    const [editingCompany, setEditingCompany] = useState<Company | null>(null);
+    const { reset } = useForm<CompanyFormData>();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-    async function handleDelete(id: number) {
-        if (!window.confirm("Вы уверены, что хотите удалить этот банк?")) {
-            return;
-        }
-
-        const response = await fetch(`/api/banks/${id}`, { method: "DELETE" });
-        if (!response.ok) {
-            alert("Ошибка при удалении банка");
-            return;
-        } else {
-            setBanks((prevBanks) => {
-                return prevBanks.filter((bank) => bank.id !== id);
-            });
-        }
-    }
-    function openEditModal(bank: Bank) {
-        setEditingBank(bank);
-        reset(bank);
+    function openEditModal(company: Company) {
+        setEditingCompany(company);
+        reset(company);
     }
 
     function handleCloseModal() {
-        setEditingBank(null);
+        setEditingCompany(null);
     }
 
-    async function handleEditBank(data: BankFormData) {
-        if (!editingBank) return;
-        const response = await fetch(`/api/banks/${editingBank.id}`, {
+    async function handleDelete(id: number) {
+        if (!window.confirm("Вы уверены, что хотите удалить эту компанию?")) {
+            return;
+        }
+        const response = await fetch(`/api/companies/${id}`, {
+            method: "DELETE",
+        });
+
+        if (!response.ok) {
+            alert("Ошибка при удалении компании");
+            return;
+        } else {
+            setCompanies((prevCompanies) => {
+                return prevCompanies.filter((item) => item.id !== id);
+            });
+        }
+    }
+
+    async function handleEditCompany(data: CompanyFormData) {
+        if (!editingCompany) return;
+        const response = await fetch(`/api/companies/${editingCompany.id}`, {
             method: "PUT",
             body: JSON.stringify(data),
             headers: { "Content-Type": "application/json" },
@@ -79,15 +77,15 @@ export const BankManager = ({ initialBanks }: BankManagerProps) => {
             alert("Ошибка при редактировании банка");
             return;
         } else {
-            const updatedBank = await response.json();
-            setBanks(banks.map((bank) => (bank.id === updatedBank.id ? updatedBank : bank)));
+            const updatedCompany = await response.json();
+            setCompanies(companies.map((item) => (item.id === updatedCompany.id ? updatedCompany : item)));
             handleCloseModal();
-            setEditingBank(null);
+            setEditingCompany(null);
         }
     }
 
-    async function handleCreateBank(data: BankFormData) {
-        const response = await fetch(`/api/banks`, {
+    async function handleCreateCompany(data: CompanyFormData) {
+        const response = await fetch(`/api/companies`, {
             method: "POST",
             body: JSON.stringify(data),
             headers: { "Content-Type": "application/json" },
@@ -97,55 +95,53 @@ export const BankManager = ({ initialBanks }: BankManagerProps) => {
             const error = await response.json();
             alert(`Ошибка при создании: ${error.error}`);
         } else {
-            const newBank = await response.json();
-            setBanks([...banks, newBank]);
+            const newCompany = await response.json();
+            setCompanies([...companies, newCompany]);
             setIsCreateModalOpen(false);
         }
     }
     return (
         <>
             <div style={{ marginBottom: "1rem" }}>
-                <button onClick={() => setIsCreateModalOpen(true)}> Добавить новый банк</button>
+                <button onClick={() => setIsCreateModalOpen(true)}> Добавить новую компанию</button>
             </div>
             <table style={tableStyles}>
                 <thead>
                     <tr>
                         <th style={thStyles}>Название</th>
+                        <th style={thStyles}>ИНН</th>
                         <th style={thStyles}>Страна</th>
-                        <th style={thStyles}>БИК</th>
-                        <th style={thStyles}>SWIFT</th>
                         <th style={thStyles}>Действия</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {banks.map((bank) => (
-                        <tr key={bank.id}>
-                            <td style={tdStyles}>{bank.name}</td>
-                            <td style={tdStyles}>{bank.country}</td>
-                            <td style={tdStyles}>{bank.BIC || "—"}</td>
-                            <td style={tdStyles}>{bank.SWIFT || "—"}</td>
+                    {companies.map((company) => (
+                        <tr key={company.id}>
+                            <td style={tdStyles}>{company.name}</td>
+                            <td style={tdStyles}>{company.taxId || "—"}</td>
+                            <td style={tdStyles}>{company.country}</td>
                             <td style={actionsCellStyles}>
                                 <button
-                                    onClick={() => handleDelete(bank.id)}
+                                    onClick={() => handleDelete(company.id)}
                                     style={{ color: "red", marginRight: "8px", cursor: "pointer" }}
                                 >
                                     Удалить
                                 </button>
-                                <button onClick={() => openEditModal(bank)}>Изменить</button>
-                                {editingBank && (
-                                    <Modal isOpen={!!editingBank} onClose={handleCloseModal}>
-                                        <BankForm
-                                            bank={editingBank}
-                                            onFormSubmit={handleEditBank}
-                                            onCancel={() => setEditingBank(null)}
+                                <button onClick={() => openEditModal(company)}>Изменить</button>
+                                {editingCompany && (
+                                    <Modal isOpen={!!editingCompany} onClose={handleCloseModal}>
+                                        <CompanyForm
+                                            company={editingCompany}
+                                            onFormSubmit={handleEditCompany}
+                                            onCancel={() => setEditingCompany(null)}
                                         />
                                     </Modal>
                                 )}
                                 {isCreateModalOpen && (
                                     <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)}>
-                                        <BankForm
-                                            bank={null}
-                                            onFormSubmit={handleCreateBank}
+                                        <CompanyForm
+                                            company={null}
+                                            onFormSubmit={handleCreateCompany}
                                             onCancel={() => setIsCreateModalOpen(false)}
                                         />
                                     </Modal>

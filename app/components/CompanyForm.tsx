@@ -1,30 +1,30 @@
 "use client";
 
-import { Bank } from "@prisma/client";
+import { Company } from "@prisma/client";
 import { useForm } from "react-hook-form";
 
-type BankFormData = Omit<Bank, "id" | "createdAt" | "updatedAt">;
+type CompanyFormData = Omit<Company, "id">;
 
-type BankProps = {
-    bank?: Bank | null;
-    onFormSubmit: (data: BankFormData) => Promise<void>;
+interface CompanyFormProps {
+    company?: Company | null;
+    onFormSubmit: (data: CompanyFormData) => Promise<void>;
     onCancel: () => void;
-};
+}
 
-export const BankForm = ({ bank, onFormSubmit, onCancel }: BankProps) => {
-    const { register, handleSubmit, formState } = useForm<BankFormData>({
-        defaultValues: bank || {
+export const CompanyForm = ({ company, onFormSubmit, onCancel }: CompanyFormProps) => {
+    const { register, handleSubmit, formState } = useForm<CompanyFormData>({
+        defaultValues: company || {
             name: "",
             country: "",
-            BIC: "",
-            SWIFT: "",
+            taxId: "",
         },
     });
 
-    const isEditing = !!bank;
+    const isEditing = !!company;
+
     return (
         <>
-            <h2>{isEditing ? `Редактирование банка: ${bank.name}` : "Добавление банка"}</h2>
+            <h2>{isEditing ? `Редактирование компании: ${company.name}` : "Добавление компании"}</h2>
             <form onSubmit={handleSubmit(onFormSubmit)}>
                 <div className="form-field">
                     <label className="form-label">Название</label>
@@ -35,13 +35,10 @@ export const BankForm = ({ bank, onFormSubmit, onCancel }: BankProps) => {
                     <input className="form-input" {...register("country", { required: true, minLength: 3 })} />
                 </div>
                 <div className="form-field">
-                    <label className="form-label">BIC</label>
-                    <input className="form-input" {...register("BIC")} />
+                    <label className="form-label">ИНН</label>
+                    <input className="form-input" {...register("taxId", { required: true, minLength: 10 })} />
                 </div>
-                <div className="form-field">
-                    <label className="form-label">SWIFT</label>
-                    <input className="form-input" {...register("SWIFT")} />
-                </div>
+
                 <button type="submit" disabled={formState.isSubmitting}>
                     {isEditing ? "Сохранить" : "Создать"}
                 </button>
