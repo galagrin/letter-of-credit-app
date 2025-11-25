@@ -17,19 +17,36 @@ export default async function LcsPage() {
         redirect("/dashboard");
     }
 
-    const lettersOfCredit = await prisma.letterOfCredit.findMany({
+    const lettersOfCreditFromDb = await prisma.letterOfCredit.findMany({
         orderBy: { issueDate: "asc" },
         include: {
             applicant: true,
             beneficiary: true,
             issuingBank: true,
+            advisingBank: true,
+            createdBy: true,
         },
     });
+
+    const formattedLcs = lettersOfCreditFromDb.map((lc) => ({
+        ...lc,
+        // Превращаем Decimal в строку с 2 знаками после запятой
+        amount: lc.amount.toFixed(2),
+        // Превращаем Date в локализованную строку даты
+        issueDate: lc.issueDate.toLocaleDateString("ru-RU"),
+        expiryDate: lc.expiryDate.toLocaleDateString("ru-RU"),
+        // Оставляем только нужные поля из связанных объектов
+        applicantName: lc.applicant.name,
+        beneficiaryName: lc.beneficiary.name,
+        issuingBankName: lc.issuingBank.name,
+        advisingBankName: lc.advisingBank ? lc.advisingBank.name : null,
+        createdBy: lc.createdById,
+    }));
 
     return (
         <div style={{ display: "flex", justifyContent: "center", alignItems: "center", flexDirection: "column" }}>
             <h1>Управление аккредитивами</h1>
-            <LcManager initialLcs={lettersOfCredit} session={session} />
+            <LcManager initialLcs={formattedLcs} session={session} />
         </div>
     );
 }
