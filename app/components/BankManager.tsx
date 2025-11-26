@@ -51,8 +51,6 @@ export const BankManager = ({ initialBanks }: BankManagerProps) => {
 
         const response = await fetch(`/api/banks/${id}`, { method: "DELETE" });
         if (!response.ok) {
-            alert("Ошибка при удалении банка");
-            return;
         } else {
             setBanks((prevBanks) => {
                 return prevBanks.filter((bank) => bank.id !== id);
