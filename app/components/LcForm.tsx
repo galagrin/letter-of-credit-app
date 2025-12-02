@@ -1,5 +1,6 @@
 "use client";
 
+import { Bank, Company } from "@prisma/client";
 import { useForm } from "react-hook-form";
 
 export type FormValues = {
@@ -9,15 +10,20 @@ export type FormValues = {
     issueDate: string;
     expiryDate: string;
     isConfirmed: boolean;
+    applicantId: number;
+    beneficiaryId: number;
+    issuingBankId: number;
 };
 
 type LcFormDataProps = {
-    initialData?: FormValues;
+    initialData?: Partial<FormValues>;
     onCancel: () => void;
     onFormSubmit: (data: FormValues) => Promise<void>;
+    banks: Bank[];
+    companies: Company[];
 };
 
-export const LcForm = ({ initialData, onCancel, onFormSubmit }: LcFormDataProps) => {
+export const LcForm = ({ initialData, onCancel, onFormSubmit, banks, companies }: LcFormDataProps) => {
     const { register, handleSubmit, formState } = useForm<FormValues>({
         defaultValues: initialData,
     });
@@ -59,7 +65,19 @@ export const LcForm = ({ initialData, onCancel, onFormSubmit }: LcFormDataProps)
                     <label className="form-label">Подтвержденный</label>
                     <input type="checkbox" className="form-input" {...register("isConfirmed")} />
                 </div>
-                <p>Внимание: выбор компаний и банков пока не реализован.</p>
+
+                <div className="form-field">
+                    <label className="form-label">Банк-эмитент</label>
+                    <select {...register("issuingBankId", { valueAsNumber: true, required: true })}>
+                        {banks.map((bank) => (
+                            <option key={bank.id} value={bank.id}>
+                                {bank.name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                {/* <p>Внимание: выбор компаний и банков пока не реализован.</p> */}
                 <button type="submit" disabled={formState.isSubmitting}>
                     {isEditing ? "Сохранить" : "Создать"}
                 </button>

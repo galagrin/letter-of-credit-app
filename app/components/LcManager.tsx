@@ -3,6 +3,7 @@ import { Session } from "next-auth";
 import { useState } from "react";
 import { Modal } from "./Modal";
 import { LcForm, FormValues } from "./LcForm";
+import { Bank, Company } from "@prisma/client";
 
 export type FormattedLc = {
     id: string;
@@ -23,9 +24,11 @@ export type FormattedLc = {
 interface LcManagerProps {
     initialLcs: FormattedLc[];
     session: Session;
+    banks: Bank[];
+    companies: Company[];
 }
 
-export const LcManager = ({ initialLcs, session }: LcManagerProps) => {
+export const LcManager = ({ initialLcs, session, banks, companies }: LcManagerProps) => {
     const [lcs, setLcs] = useState<FormattedLc[]>(initialLcs);
     const [editingLc, setEditingLc] = useState<FormattedLc | null>(null);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -70,7 +73,7 @@ export const LcManager = ({ initialLcs, session }: LcManagerProps) => {
             // Заглушки для ID
             applicantId: 1,
             beneficiaryId: 2,
-            issuingBankId: 1,
+            issuingBankId: formData.issuingBankId,
         };
 
         try {
@@ -115,7 +118,7 @@ export const LcManager = ({ initialLcs, session }: LcManagerProps) => {
     const handleCreateLc = async (formData: FormValues) => {
         const dataToSend = {
             referenceNumber: formData.referenceNumber,
-            amount: formData.amount,
+            amount: parseFloat(formData.amount),
             currency: formData.currency,
             // Превращаем '2025-11-17' обратно в полную ISO-строку
             issueDate: new Date(formData.issueDate).toISOString(),
@@ -124,7 +127,7 @@ export const LcManager = ({ initialLcs, session }: LcManagerProps) => {
             // Заглушки для ID
             applicantId: 1,
             beneficiaryId: 2,
-            issuingBankId: 1,
+            issuingBankId: formData.issuingBankId,
         };
         try {
             const response = await fetch(`/api/lcs`, {
@@ -155,7 +158,7 @@ export const LcManager = ({ initialLcs, session }: LcManagerProps) => {
             // [2] -> год, [1] -> месяц, [0] -> день
             return `${parts[2]}-${parts[1]}-${parts[0]}`;
         };
-
+        const issuingBank = banks.find((b) => b.name === lc.issuingBankName);
         return {
             referenceNumber: lc.referenceNumber || "",
             amount: lc.amount,
@@ -163,6 +166,9 @@ export const LcManager = ({ initialLcs, session }: LcManagerProps) => {
             issueDate: parseRuDateToInput(lc.issueDate),
             expiryDate: parseRuDateToInput(lc.expiryDate),
             isConfirmed: lc.isConfirmed,
+            applicantId: 1,
+            beneficiaryId: 2,
+            issuingBankId: issuingBank?.id || 0,
         };
     };
 
@@ -231,12 +237,19 @@ export const LcManager = ({ initialLcs, session }: LcManagerProps) => {
                         initialData={getInitialDataForForm(editingLc)}
                         onFormSubmit={handleUpdateLc}
                         onCancel={handlaCloseModal}
+                        banks={banks}
+                        companies={companies}
                     />
                 </Modal>
             )}
             {isCreateModalOpen && (
                 <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)}>
-                    <LcForm onFormSubmit={handleCreateLc} onCancel={handlaCloseModal} />
+                    <LcForm
+                        onFormSubmit={handleCreateLc}
+                        onCancel={handlaCloseModal}
+                        banks={banks}
+                        companies={companies}
+                    />
                 </Modal>
             )}
         </>

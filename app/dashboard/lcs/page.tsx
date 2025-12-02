@@ -28,6 +28,9 @@ export default async function LcsPage() {
         },
     });
 
+    const banks = await prisma.bank.findMany();
+    const companies = await prisma.company.findMany();
+
     const formattedLcs = lettersOfCreditFromDb.map((lc) => ({
         ...lc,
         // Превращаем Decimal в строку с 2 знаками после запятой
@@ -46,7 +49,7 @@ export default async function LcsPage() {
     return (
         <div style={{ display: "flex", justifyContent: "center", alignItems: "center", flexDirection: "column" }}>
             <h1>Управление аккредитивами</h1>
-            <LcManager initialLcs={formattedLcs} session={session} />
+            <LcManager initialLcs={formattedLcs} session={session} banks={banks} companies={companies} />
         </div>
     );
 }
