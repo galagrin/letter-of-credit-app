@@ -77,7 +77,7 @@ export const LcForm = ({ initialData, onCancel, onFormSubmit, banks, companies }
                     </select>
                 </div>
 
-                {/* <p>Внимание: выбор компаний и банков пока не реализован.</p> */}
+                <p>Внимание: выбор компаний и банков пока не реализован.</p>
                 <button type="submit" disabled={formState.isSubmitting}>
                     {isEditing ? "Сохранить" : "Создать"}
                 </button>

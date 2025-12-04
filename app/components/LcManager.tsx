@@ -15,9 +15,13 @@ export type FormattedLc = {
     isConfirmed: boolean;
     // передаем только имена, а не целые объекты
     applicantName: string;
+    applicantId: number;
     beneficiaryName: string;
+    beneficiaryId: number;
     issuingBankName: string;
+    issuingBankId: number;
     advisingBankName: string | null;
+    advisingBankId: number | null;
     createdById: number;
 };
 
@@ -71,8 +75,8 @@ export const LcManager = ({ initialLcs, session, banks, companies }: LcManagerPr
             expiryDate: new Date(formData.expiryDate).toISOString(),
             isConfirmed: formData.isConfirmed,
             // Заглушки для ID
-            applicantId: 1,
-            beneficiaryId: 2,
+            applicantId: formData.applicantId,
+            beneficiaryId: formData.beneficiaryId,
             issuingBankId: formData.issuingBankId,
         };
 
@@ -125,8 +129,8 @@ export const LcManager = ({ initialLcs, session, banks, companies }: LcManagerPr
             expiryDate: new Date(formData.expiryDate).toISOString(),
             isConfirmed: formData.isConfirmed,
             // Заглушки для ID
-            applicantId: 1,
-            beneficiaryId: 2,
+            applicantId: formData.applicantId,
+            beneficiaryId: formData.beneficiaryId,
             issuingBankId: formData.issuingBankId,
         };
         try {
@@ -158,7 +162,7 @@ export const LcManager = ({ initialLcs, session, banks, companies }: LcManagerPr
             // [2] -> год, [1] -> месяц, [0] -> день
             return `${parts[2]}-${parts[1]}-${parts[0]}`;
         };
-        const issuingBank = banks.find((b) => b.name === lc.issuingBankName);
+
         return {
             referenceNumber: lc.referenceNumber || "",
             amount: lc.amount,
@@ -166,9 +170,9 @@ export const LcManager = ({ initialLcs, session, banks, companies }: LcManagerPr
             issueDate: parseRuDateToInput(lc.issueDate),
             expiryDate: parseRuDateToInput(lc.expiryDate),
             isConfirmed: lc.isConfirmed,
-            applicantId: 1,
-            beneficiaryId: 2,
-            issuingBankId: issuingBank?.id || 0,
+            applicantId: lc.applicantId,
+            beneficiaryId: lc.beneficiaryId,
+            issuingBankId: lc.issuingBankId,
         };
     };
 

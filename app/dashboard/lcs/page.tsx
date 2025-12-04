@@ -40,9 +40,17 @@ export default async function LcsPage() {
         expiryDate: lc.expiryDate.toLocaleDateString("ru-RU"),
         // Оставляем только нужные поля из связанных объектов
         applicantName: lc.applicant.name,
+        applicantId: lc.applicant.id,
+
         beneficiaryName: lc.beneficiary.name,
+        beneficiaryId: lc.beneficiary.id,
+
         issuingBankName: lc.issuingBank.name,
+        issuingBankId: lc.issuingBank.id,
+
         advisingBankName: lc.advisingBank ? lc.advisingBank.name : null,
+        advisingBankId: lc.advisingBank ? lc.advisingBank.id : null,
+
         createdBy: lc.createdById,
     }));
 
