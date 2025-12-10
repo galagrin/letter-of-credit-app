@@ -81,6 +81,12 @@ export async function PUT(request: Request, ctx: RouteParams) {
         const updatedLc = await prisma.letterOfCredit.update({
             where: { id },
             data: dataToUpdate,
+            include: {
+                applicant: true,
+                beneficiary: true,
+                issuingBank: true,
+                advisingBank: true,
+            },
         });
         return NextResponse.json(updatedLc, { status: 200 });
     } catch (error) {

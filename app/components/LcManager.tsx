@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Modal } from "./Modal";
 import { LcForm, FormValues } from "./LcForm";
 import { Bank, Company } from "@prisma/client";
+import { useForm } from "react-hook-form";
 
 export type FormattedLc = {
     id: string;
@@ -36,6 +37,7 @@ export const LcManager = ({ initialLcs, session, banks, companies }: LcManagerPr
     const [lcs, setLcs] = useState<FormattedLc[]>(initialLcs);
     const [editingLc, setEditingLc] = useState<FormattedLc | null>(null);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const { reset } = useForm<FormattedLc>();
 
     const handleDeleteLc = async (id: string) => {
         if (!window.confirm("Вы уверены, что хотите удалить этот аккредитив?")) {
@@ -74,10 +76,10 @@ export const LcManager = ({ initialLcs, session, banks, companies }: LcManagerPr
             issueDate: new Date(formData.issueDate).toISOString(),
             expiryDate: new Date(formData.expiryDate).toISOString(),
             isConfirmed: formData.isConfirmed,
-            // Заглушки для ID
             applicantId: formData.applicantId,
             beneficiaryId: formData.beneficiaryId,
             issuingBankId: formData.issuingBankId,
+            advisingBankId: formData.advisingBankId,
         };
 
         try {
@@ -97,10 +99,11 @@ export const LcManager = ({ initialLcs, session, banks, companies }: LcManagerPr
                     issueDate: new Date(updatedLcFromDb.issueDate).toLocaleDateString("ru-RU"),
                     expiryDate: new Date(updatedLcFromDb.expiryDate).toLocaleDateString("ru-RU"),
                     // Добавляем недостающие имена, которые сервер не вернул
-                    applicantName: editingLc!.applicantName, // Берем из редактируемого объекта
-                    beneficiaryName: editingLc!.beneficiaryName,
-                    issuingBankName: editingLc!.issuingBankName,
-                    advisingBankName: editingLc!.advisingBankName,
+                    applicantName: updatedLcFromDb.applicant.name,
+
+                    beneficiaryName: updatedLcFromDb.beneficiary.name,
+                    issuingBankName: updatedLcFromDb.issuingBank.name,
+                    advisingBankName: updatedLcFromDb.advisingBank ? updatedLcFromDb.advisingBank.name : null,
                 };
 
                 setLcs(lcs.map((lc) => (lc.id === formattedUpdatedLc.id ? formattedUpdatedLc : lc)));
@@ -116,6 +119,7 @@ export const LcManager = ({ initialLcs, session, banks, companies }: LcManagerPr
 
     const openEditModal = (lc: FormattedLc) => {
         setEditingLc(lc);
+        reset(lc);
     };
     const openCreateModal = () => setIsCreateModalOpen(true);
 
@@ -128,10 +132,10 @@ export const LcManager = ({ initialLcs, session, banks, companies }: LcManagerPr
             issueDate: new Date(formData.issueDate).toISOString(),
             expiryDate: new Date(formData.expiryDate).toISOString(),
             isConfirmed: formData.isConfirmed,
-            // Заглушки для ID
             applicantId: formData.applicantId,
             beneficiaryId: formData.beneficiaryId,
             issuingBankId: formData.issuingBankId,
+            advisingBankId: formData.advisingBankId,
         };
         try {
             const response = await fetch(`/api/lcs`, {
@@ -140,8 +144,18 @@ export const LcManager = ({ initialLcs, session, banks, companies }: LcManagerPr
                 headers: { "Content-Type": "application/json" },
             });
             if (response.ok) {
-                const newLc = await response.json();
-                setLcs([...lcs, newLc]);
+                const newLcFromDb = await response.json();
+                const formattedNewLc: FormattedLc = {
+                    ...newLcFromDb,
+                    amount: parseFloat(newLcFromDb.amount).toFixed(2),
+                    issueDate: new Date(newLcFromDb.issueDate).toLocaleDateString("ru-RU"),
+                    expiryDate: new Date(newLcFromDb.expiryDate).toLocaleDateString("ru-RU"),
+                    applicantName: newLcFromDb.applicant.name,
+                    beneficiaryName: newLcFromDb.beneficiary.name,
+                    issuingBankName: newLcFromDb.issuingBank.name,
+                    advisingBankName: newLcFromDb.advisingBank ? newLcFromDb.advisingBank.name : null,
+                };
+                setLcs((prevLcs) => [...prevLcs, formattedNewLc]);
                 setIsCreateModalOpen(false);
             } else {
                 const errorData = await response.json();
@@ -173,6 +187,7 @@ export const LcManager = ({ initialLcs, session, banks, companies }: LcManagerPr
             applicantId: lc.applicantId,
             beneficiaryId: lc.beneficiaryId,
             issuingBankId: lc.issuingBankId,
+            advisingBankId: lc.advisingBankId,
         };
     };
 

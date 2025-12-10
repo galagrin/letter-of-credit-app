@@ -76,6 +76,12 @@ export async function POST(request: Request) {
                 // Связываем с пользователем, который создал запись
                 createdBy: { connect: { id: parseInt(session.user!.id) } },
             },
+            include: {
+                applicant: true,
+                beneficiary: true,
+                issuingBank: true,
+                advisingBank: true,
+            },
         });
         return NextResponse.json(newLc, { status: 201 });
     } catch (error) {

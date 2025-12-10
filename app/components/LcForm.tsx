@@ -1,6 +1,6 @@
 "use client";
 
-import { Bank, Company } from "@prisma/client";
+import { Bank, Company, Currency } from "@prisma/client";
 import { useForm } from "react-hook-form";
 
 export type FormValues = {
@@ -13,6 +13,7 @@ export type FormValues = {
     applicantId: number;
     beneficiaryId: number;
     issuingBankId: number;
+    advisingBankId: number | null;
 };
 
 type LcFormDataProps = {
@@ -51,7 +52,13 @@ export const LcForm = ({ initialData, onCancel, onFormSubmit, banks, companies }
                 </div>
                 <div className="form-field">
                     <label className="form-label">Валюта</label>
-                    <input className="form-input" {...register("currency", { required: true })} />
+                    <select className="form-input" {...register("currency", { required: true })}>
+                        {Object.values(Currency).map((item) => (
+                            <option key={item} value={item}>
+                                {item}
+                            </option>
+                        ))}
+                    </select>
                 </div>
                 <div className="form-field">
                     <label className="form-label">Дата выпуска</label>
@@ -67,8 +74,39 @@ export const LcForm = ({ initialData, onCancel, onFormSubmit, banks, companies }
                 </div>
 
                 <div className="form-field">
+                    <label className="form-label">Аппликант</label>
+                    <select
+                        {...register("applicantId", { valueAsNumber: true, required: true })}
+                        className="form-input"
+                    >
+                        {companies.map((company) => (
+                            <option key={company.id} value={company.id}>
+                                {company.name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                <div className="form-field">
+                    <label className="form-label">Бенефициар</label>
+                    <select
+                        {...register("beneficiaryId", { valueAsNumber: true, required: true })}
+                        className="form-input"
+                    >
+                        {companies.map((company) => (
+                            <option key={company.id} value={company.id}>
+                                {company.name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                <div className="form-field">
                     <label className="form-label">Банк-эмитент</label>
-                    <select {...register("issuingBankId", { valueAsNumber: true, required: true })}>
+                    <select
+                        {...register("issuingBankId", { valueAsNumber: true, required: true })}
+                        className="form-input"
+                    >
                         {banks.map((bank) => (
                             <option key={bank.id} value={bank.id}>
                                 {bank.name}
@@ -77,7 +115,17 @@ export const LcForm = ({ initialData, onCancel, onFormSubmit, banks, companies }
                     </select>
                 </div>
 
-                <p>Внимание: выбор компаний и банков пока не реализован.</p>
+                <div className="form-field">
+                    <label className="form-label">Авизующий банк</label>
+                    <select {...register("advisingBankId", { valueAsNumber: true })} className="form-input">
+                        {banks.map((bank) => (
+                            <option key={bank.id} value={bank.id}>
+                                {bank.name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
                 <button type="submit" disabled={formState.isSubmitting}>
                     {isEditing ? "Сохранить" : "Создать"}
                 </button>
