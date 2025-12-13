@@ -99,14 +99,6 @@ export const BankManager = () => {
         },
     });
 
-    function openEditModal(bank: Bank) {
-        setEditingBank(bank);
-        reset(bank);
-    }
-
-    function handleCloseModal() {
-        setEditingBank(null);
-    }
     const createMutation = useMutation({
         mutationFn: createBank,
         onSuccess: () => {
@@ -125,6 +117,14 @@ export const BankManager = () => {
         },
     });
 
+    function openEditModal(bank: Bank) {
+        setEditingBank(bank);
+        reset(bank);
+    }
+
+    function handleCloseModal() {
+        setEditingBank(null);
+    }
     const handleUpdateBankClick = async (data: BankFormData) => {
         if (!editingBank) return;
         editMutation.mutate({ id: editingBank.id, data });
