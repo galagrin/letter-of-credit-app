@@ -38,8 +38,8 @@ const actionsCellStyles = {
     textAlign: "center" as const,
 };
 
-const getBanks = async (): Promise<Bank[]> => {
-    const res = await fetch("/api/banks");
+const getBanks = async ({ signal }: { signal: AbortSignal }): Promise<Bank[]> => {
+    const res = await fetch("/api/banks", { signal });
     if (!res.ok) {
         throw new Error("Не удалось загрузить банки");
     }

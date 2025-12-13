@@ -36,8 +36,8 @@ const actionsCellStyles = {
     textAlign: "center" as const,
 };
 
-const getCompanies = async (): Promise<Company[]> => {
-    const result = await fetch("/api/companies");
+const getCompanies = async ({ signal }: { signal: AbortSignal }): Promise<Company[]> => {
+    const result = await fetch("/api/companies", { signal });
     if (result.ok) {
         return result.json();
     } else {
