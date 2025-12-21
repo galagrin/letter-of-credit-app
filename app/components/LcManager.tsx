@@ -2,169 +2,116 @@
 import { Session } from "next-auth";
 import { useState } from "react";
 import { Modal } from "./Modal";
-import { LcForm, FormValues } from "./LcForm";
-import { Bank, Company } from "@prisma/client";
+import { LcForm } from "./LcForm";
 import { useForm } from "react-hook-form";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { FormattedLc, FormValues } from "@/types/data";
+import { getBanks } from "@/lib/api/bank";
+import { getCompanies } from "@/lib/api/company";
+import { createLc, deleteLc, getLcs, updateLc } from "@/lib/api/lc";
+import { queryClient } from "@/lib/query-client";
+import { Bank, Company, LetterOfCredit } from "@prisma/client";
 
-export type FormattedLc = {
-    id: string;
-    referenceNumber: string | null;
-    amount: string;
-    currency: string;
-    issueDate: string;
-    expiryDate: string;
-    isConfirmed: boolean;
-    // передаем только имена, а не целые объекты
-    applicantName: string;
-    applicantId: number;
-    beneficiaryName: string;
-    beneficiaryId: number;
-    issuingBankName: string;
-    issuingBankId: number;
-    advisingBankName: string | null;
-    advisingBankId: number | null;
-    createdById: number;
+// Описывает "сырой" объект, который приходит от API (`getLcs`)
+export type RawLc = LetterOfCredit & {
+    applicant: Company;
+    beneficiary: Company;
+    issuingBank: Bank;
+    advisingBank: Bank | null;
 };
-
 interface LcManagerProps {
-    initialLcs: FormattedLc[];
     session: Session;
-    banks: Bank[];
-    companies: Company[];
 }
+export const LcManager = ({ session }: LcManagerProps) => {
+    const {
+        data: lcs = [],
+        isError,
+        error,
+        isLoading,
+    } = useQuery({
+        queryFn: getLcs,
+        queryKey: ["lcs"],
+        select: (rawLcs: RawLc[]) => {
+            return rawLcs.map((lc) => ({
+                ...lc,
+                amount: parseFloat(lc.amount.toString()).toFixed(2), // преобразование в строку
+                issueDate: new Date(lc.issueDate).toLocaleDateString("ru-RU"),
+                expiryDate: new Date(lc.expiryDate).toLocaleDateString("ru-RU"),
+                applicantName: lc.applicant.name,
+                beneficiaryName: lc.beneficiary.name,
+                issuingBankName: lc.issuingBank.name,
+                advisingBankName: lc.advisingBank ? lc.advisingBank.name : null,
+            }));
+        },
+    });
+    const { data: banks = [] } = useQuery({
+        queryKey: ["banks"],
+        queryFn: getBanks,
+    });
+    const { data: companies = [] } = useQuery({
+        queryKey: ["companies"],
+        queryFn: getCompanies,
+    });
 
-export const LcManager = ({ initialLcs, session, banks, companies }: LcManagerProps) => {
-    const [lcs, setLcs] = useState<FormattedLc[]>(initialLcs);
     const [editingLc, setEditingLc] = useState<FormattedLc | null>(null);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const { reset } = useForm<FormattedLc>();
 
-    const handleDeleteLc = async (id: string) => {
-        if (!window.confirm("Вы уверены, что хотите удалить этот аккредитив?")) {
-            return;
-        }
-        try {
-            const response = await fetch(`/api/lcs/${id}`, {
-                method: "DELETE",
-            });
+    const deleteMutation = useMutation({
+        mutationFn: deleteLc,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["lcs"] });
+        },
+    });
 
-            if (response.ok) {
-                setLcs((prevLcs) => prevLcs.filter((lc) => lc.id !== id));
-                console.log("Аккредитив успешно удален");
-            } else {
-                const errorData = await response.json();
-                console.error("Ошибка удаления аккредитива:", errorData);
-            }
-        } catch (error) {
-            console.error("Ошибка при удалении аккредитива", error);
+    const handleDeleteClick = (id: string) => {
+        if (window.confirm("Вы уверены, что хотите удалить этот аккредитив?")) {
+            deleteMutation.mutate(id);
         }
     };
+
     const handlaCloseModal = () => {
         setEditingLc(null);
         setIsCreateModalOpen(false);
     };
 
-    const handleUpdateLc = async (formData: FormValues) => {
-        if (!editingLc) return;
-
-        // Преобразуем данные из формы в то, что нужно для API
-        const dataToSend = {
-            referenceNumber: formData.referenceNumber,
-            amount: parseFloat(formData.amount),
-            currency: formData.currency,
-            // Превращаем '2025-11-17' обратно в полную ISO-строку
-            issueDate: new Date(formData.issueDate).toISOString(),
-            expiryDate: new Date(formData.expiryDate).toISOString(),
-            isConfirmed: formData.isConfirmed,
-            applicantId: formData.applicantId,
-            beneficiaryId: formData.beneficiaryId,
-            issuingBankId: formData.issuingBankId,
-            advisingBankId: formData.advisingBankId,
-        };
-
-        try {
-            const response = await fetch(`/api/lcs/${editingLc.id}`, {
-                method: "PUT",
-                body: JSON.stringify(dataToSend),
-                headers: { "Content-Type": "application/json" },
+    const updateMutation = useMutation({
+        mutationFn: updateLc,
+        onSuccess: (updatedLc) => {
+            // Оптимистичное обновление UI без повторного fetch!
+            queryClient.setQueryData(["lcs"], (oldData: FormattedLc[] | undefined) => {
+                return oldData ? oldData.map((lc) => (lc.id === updatedLc.id ? updatedLc : lc)) : [];
             });
+        },
+    });
 
-            if (response.ok) {
-                const updatedLcFromDb = await response.json();
-
-                // Преобразование ответа от сервера
-                const formattedUpdatedLc: FormattedLc = {
-                    ...updatedLcFromDb,
-                    amount: parseFloat(updatedLcFromDb.amount).toFixed(2),
-                    issueDate: new Date(updatedLcFromDb.issueDate).toLocaleDateString("ru-RU"),
-                    expiryDate: new Date(updatedLcFromDb.expiryDate).toLocaleDateString("ru-RU"),
-                    // Добавляем недостающие имена, которые сервер не вернул
-                    applicantName: updatedLcFromDb.applicant.name,
-
-                    beneficiaryName: updatedLcFromDb.beneficiary.name,
-                    issuingBankName: updatedLcFromDb.issuingBank.name,
-                    advisingBankName: updatedLcFromDb.advisingBank ? updatedLcFromDb.advisingBank.name : null,
-                };
-
-                setLcs(lcs.map((lc) => (lc.id === formattedUpdatedLc.id ? formattedUpdatedLc : lc)));
-                handlaCloseModal();
-            } else {
-                const errorData = await response.json();
-                console.error("Ошибка изменения аккредитива:", errorData);
-            }
-        } catch (error) {
-            console.error("Ошибка при изменении аккредитива", error);
-        }
+    const handleUpdateSubmit = async (formData: FormValues) => {
+        if (!editingLc) return;
+        updateMutation.mutate({ id: editingLc.id, formData });
     };
-
     const openEditModal = (lc: FormattedLc) => {
         setEditingLc(lc);
         reset(lc);
     };
     const openCreateModal = () => setIsCreateModalOpen(true);
 
-    const handleCreateLc = async (formData: FormValues) => {
-        const dataToSend = {
-            referenceNumber: formData.referenceNumber,
-            amount: parseFloat(formData.amount),
-            currency: formData.currency,
-            // Превращаем '2025-11-17' обратно в полную ISO-строку
-            issueDate: new Date(formData.issueDate).toISOString(),
-            expiryDate: new Date(formData.expiryDate).toISOString(),
-            isConfirmed: formData.isConfirmed,
-            applicantId: formData.applicantId,
-            beneficiaryId: formData.beneficiaryId,
-            issuingBankId: formData.issuingBankId,
-            advisingBankId: formData.advisingBankId,
-        };
-        try {
-            const response = await fetch(`/api/lcs`, {
-                method: "POST",
-                body: JSON.stringify(dataToSend),
-                headers: { "Content-Type": "application/json" },
-            });
-            if (response.ok) {
-                const newLcFromDb = await response.json();
-                const formattedNewLc: FormattedLc = {
-                    ...newLcFromDb,
-                    amount: parseFloat(newLcFromDb.amount).toFixed(2),
-                    issueDate: new Date(newLcFromDb.issueDate).toLocaleDateString("ru-RU"),
-                    expiryDate: new Date(newLcFromDb.expiryDate).toLocaleDateString("ru-RU"),
-                    applicantName: newLcFromDb.applicant.name,
-                    beneficiaryName: newLcFromDb.beneficiary.name,
-                    issuingBankName: newLcFromDb.issuingBank.name,
-                    advisingBankName: newLcFromDb.advisingBank ? newLcFromDb.advisingBank.name : null,
-                };
-                setLcs((prevLcs) => [...prevLcs, formattedNewLc]);
-                setIsCreateModalOpen(false);
-            } else {
-                const errorData = await response.json();
-                console.error("Ошибка создания аккредитива:", errorData);
-            }
-        } catch (error) {
-            console.error("Ошибка при создании аккредитива", error);
-        }
+    const createMutation = useMutation({
+        mutationFn: createLc,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["lcs"] });
+        },
+    });
+
+    const handleCreateLcClick = async (data: FormValues) => {
+        createMutation.mutate(data);
     };
+
+    if (isLoading) {
+        return <div>Загрузка...</div>;
+    }
+    if (isError) {
+        return <div>Ошибка: {error.message}</div>;
+    }
 
     const getInitialDataForForm = (lc: FormattedLc): FormValues => {
         // преобразование дат в формат '2025-11-17'
@@ -213,7 +160,7 @@ export const LcManager = ({ initialLcs, session, banks, companies }: LcManagerPr
                     </tr>
                 </thead>
                 <tbody>
-                    {lcs.map((lc) => {
+                    {lcs.map((lc: FormattedLc) => {
                         const isOwner = lc.createdById === parseInt(session.user.id);
                         const isAdmin = session.user.role === "ADMIN";
                         const canEditOrDelete = isOwner || isAdmin;
@@ -234,7 +181,7 @@ export const LcManager = ({ initialLcs, session, banks, companies }: LcManagerPr
                                     {canEditOrDelete ? (
                                         <>
                                             <button
-                                                onClick={() => handleDeleteLc(lc.id)}
+                                                onClick={() => handleDeleteClick(lc.id)}
                                                 style={{ color: "red", marginRight: "8px", cursor: "pointer" }}
                                             >
                                                 Удалить
@@ -254,7 +201,7 @@ export const LcManager = ({ initialLcs, session, banks, companies }: LcManagerPr
                 <Modal isOpen={!!editingLc} onClose={handlaCloseModal}>
                     <LcForm
                         initialData={getInitialDataForForm(editingLc)}
-                        onFormSubmit={handleUpdateLc}
+                        onFormSubmit={handleUpdateSubmit}
                         onCancel={handlaCloseModal}
                         banks={banks}
                         companies={companies}
@@ -264,7 +211,7 @@ export const LcManager = ({ initialLcs, session, banks, companies }: LcManagerPr
             {isCreateModalOpen && (
                 <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)}>
                     <LcForm
-                        onFormSubmit={handleCreateLc}
+                        onFormSubmit={handleCreateLcClick}
                         onCancel={handlaCloseModal}
                         banks={banks}
                         companies={companies}

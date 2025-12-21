@@ -7,11 +7,8 @@ import { Modal } from "./Modal";
 import { CompanyForm } from "./CompanyForm";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/query-client";
-
-type CompanyFormData = Omit<Company, "id">;
-type CompanyManagerProps = {
-    initialCompanies: Company[];
-};
+import { CompanyFormData } from "@/types/data";
+import { createCompany, deleteCompany, getCompanies, updateCompany } from "@/lib/api/company";
 
 // Стили для таблицы (todo: вынести в CSS)
 const tableStyles = {
@@ -34,50 +31,6 @@ const actionsCellStyles = {
     ...tdStyles,
     width: "150px",
     textAlign: "center" as const,
-};
-
-const getCompanies = async ({ signal }: { signal: AbortSignal }): Promise<Company[]> => {
-    const result = await fetch("/api/companies", { signal });
-    if (result.ok) {
-        return result.json();
-    } else {
-        throw new Error("Ошибка при загрузке компаний");
-    }
-};
-const createCompany = async (data: CompanyFormData) => {
-    const response = await fetch(`/api/companies`, {
-        method: "POST",
-        body: JSON.stringify(data),
-        headers: { "Content-Type": "application/json" },
-    });
-
-    if (!response.ok) {
-        throw new Error("Ошибка при создании компаний");
-    }
-    return response.json();
-};
-
-const updateCompany = async ({ id, data }: { id: number; data: CompanyFormData }) => {
-    const response = await fetch(`/api/companies/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-        headers: { "Content-Type": "application/json" },
-    });
-    if (!response.ok) {
-        throw new Error("Ошибка при редактировании компаний");
-    }
-
-    return response.json();
-};
-
-const deleteCompany = async (id: number) => {
-    const response = await fetch(`/api/companies/${id}`, {
-        method: "DELETE",
-    });
-
-    if (!response.ok) {
-        throw new Error("Ошибка при удалении компаний");
-    }
 };
 
 export const CompanyManager = () => {

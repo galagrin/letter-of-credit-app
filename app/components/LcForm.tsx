@@ -1,20 +1,8 @@
 "use client";
 
+import { FormValues } from "@/types/data";
 import { Bank, Company, Currency } from "@prisma/client";
 import { useForm } from "react-hook-form";
-
-export type FormValues = {
-    referenceNumber: string;
-    amount: string;
-    currency: string;
-    issueDate: string;
-    expiryDate: string;
-    isConfirmed: boolean;
-    applicantId: number;
-    beneficiaryId: number;
-    issuingBankId: number;
-    advisingBankId: number | null;
-};
 
 type LcFormDataProps = {
     initialData?: Partial<FormValues>;

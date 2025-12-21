@@ -107,6 +107,7 @@ export async function GET() {
             applicant: true,
             beneficiary: true,
             issuingBank: true,
+            advisingBank: true,
         },
     });
     return NextResponse.json(lcs);
