@@ -26,10 +26,12 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="ru">
-            <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+            <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground  `}>
                 <Providers>
                     <Header />
-                    <main>{children}</main>
+                    <main className="px-4 py-8">
+                        <div className="mx-auto w-full max-w-xl">{children}</div>
+                    </main>
                 </Providers>
             </body>
         </html>
