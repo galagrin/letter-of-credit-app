@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { DashboardNavLink } from "../shared/DashboardNavLink";
 
 // Компонент ДОЛЖЕН быть async
 export default async function DashboardPage() {
@@ -30,45 +31,13 @@ export default async function DashboardPage() {
             >
                 <h2 style={{ fontSize: "1.5rem", paddingBottom: "0.5rem", paddingTop: "0.5rem" }}>Навигация</h2>
 
-                <Link
-                    href="/dashboard/lcs"
-                    style={{
-                        padding: "0.75rem",
-                        border: "1px solid #ccc",
-                        borderRadius: "4px",
-                        textAlign: "center",
-                        width: "100%",
-                    }}
-                >
-                    Управление Аккредитивами
-                </Link>
+                <DashboardNavLink href={"/dashboard/lcs"} children="Управление Аккредитивами" />
 
                 {session.user?.role === "ADMIN" && (
                     <>
-                        <Link
-                            href="/dashboard/banks"
-                            style={{
-                                padding: "0.75rem",
-                                border: "1px solid #ccc",
-                                borderRadius: "4px",
-                                textAlign: "center",
-                                width: "100%",
-                            }}
-                        >
-                            Управление Банками
-                        </Link>
-                        <Link
-                            href="/dashboard/companies"
-                            style={{
-                                padding: "0.75rem",
-                                border: "1px solid #ccc",
-                                borderRadius: "4px",
-                                textAlign: "center",
-                                width: "100%",
-                            }}
-                        >
-                            Управление Компаниями
-                        </Link>
+                        <DashboardNavLink href={"/dashboard/banks"} children="Управление Банками" />
+
+                        <DashboardNavLink href={"/dashboard/companies"} children="Управление Компаниями" />
                     </>
                 )}
             </div>
