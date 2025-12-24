@@ -1,8 +1,6 @@
 "use client";
 
-import * as React from "react";
-
-type ButtonVariant = "primary" | "danger";
+type ButtonVariant = "primary" | "danger" | "new";
 type ButtonSize = "sm" | "md";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -11,13 +9,15 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 const baseClasses =
-    "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors " +
+    "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors" +
+    "transition-colors cursor-pointer " +
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 " +
-    "disabled:opacity-50 disabled:pointer-events-none";
+    "disabled:opacity-50 disabled:pointer-events-none disabled:cursor-not-allowed";
 
 const variantClasses: Record<ButtonVariant, string> = {
     primary: "bg-blue-600 text-white shadow-sm hover:bg-blue-700 focus-visible:ring-blue-500",
     danger: "border border-red-200 text-red-700 hover:bg-red-50 hover:border-red-300 focus-visible:ring-red-500",
+    new: "bg-slate-500 text-white shadow-sm hover:bg-slate-600 focus-visible:ring-slate-400",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {

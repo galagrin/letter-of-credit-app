@@ -9,6 +9,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/query-client";
 import { createBank, deleteBank, getBanks, updateBank } from "@/lib/api/bank";
 import { BankFormData } from "@/types/data";
+import { Button } from "../shared/Button";
 
 // Стили для таблицы (todo: вынести в CSS)
 const tableStyles = {
@@ -102,8 +103,10 @@ export const BankManager = () => {
     }
     return (
         <>
-            <div style={{ marginBottom: "1rem" }}>
-                <button onClick={() => setIsCreateModalOpen(true)}> Добавить новый банк</button>
+            <div className="my-4">
+                <Button size="md" variant="new" onClick={() => setIsCreateModalOpen(true)}>
+                    Добавить новый банк
+                </Button>
             </div>
             <table style={tableStyles}>
                 <thead>
