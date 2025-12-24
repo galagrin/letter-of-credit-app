@@ -5,16 +5,10 @@ import { Bank } from "@prisma/client";
 import { Modal } from "./Modal";
 import { useForm } from "react-hook-form";
 import { BankForm } from "./BankForm";
-
-type BankFormData = {
-    name: string;
-    country: string;
-    BIC: string | null;
-    SWIFT: string | null;
-};
-type BankManagerProps = {
-    initialBanks: Bank[];
-};
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/query-client";
+import { createBank, deleteBank, getBanks, updateBank } from "@/lib/api/bank";
+import { BankFormData } from "@/types/data";
 
 // Стили для таблицы (todo: вынести в CSS)
 const tableStyles = {
@@ -38,25 +32,47 @@ const actionsCellStyles = {
     width: "150px",
     textAlign: "center" as const,
 };
-export const BankManager = ({ initialBanks }: BankManagerProps) => {
-    const [banks, setBanks] = useState(initialBanks);
+
+export const BankManager = () => {
     const [editingBank, setEditingBank] = useState<Bank | null>(null);
+    const {
+        data: banks,
+        isError,
+        isLoading,
+        error,
+    } = useQuery({
+        queryFn: getBanks,
+        queryKey: ["banks"],
+    });
+
     const { reset } = useForm<BankFormData>();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-    async function handleDelete(id: number) {
-        if (!window.confirm("Вы уверены, что хотите удалить этот банк?")) {
-            return;
-        }
+    const deleteMutation = useMutation({
+        mutationFn: deleteBank,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["banks"] });
+        },
+    });
 
-        const response = await fetch(`/api/banks/${id}`, { method: "DELETE" });
-        if (!response.ok) {
-        } else {
-            setBanks((prevBanks) => {
-                return prevBanks.filter((bank) => bank.id !== id);
+    const createMutation = useMutation({
+        mutationFn: createBank,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["banks"] });
+            setIsCreateModalOpen(false);
+        },
+    });
+
+    const editMutation = useMutation({
+        mutationFn: updateBank,
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: ["banks"],
             });
-        }
-    }
+            setEditingBank(null);
+        },
+    });
+
     function openEditModal(bank: Bank) {
         setEditingBank(bank);
         reset(bank);
@@ -65,40 +81,24 @@ export const BankManager = ({ initialBanks }: BankManagerProps) => {
     function handleCloseModal() {
         setEditingBank(null);
     }
-
-    async function handleEditBank(data: BankFormData) {
+    const handleUpdateBankClick = async (data: BankFormData) => {
         if (!editingBank) return;
-        const response = await fetch(`/api/banks/${editingBank.id}`, {
-            method: "PUT",
-            body: JSON.stringify(data),
-            headers: { "Content-Type": "application/json" },
-        });
-        if (!response.ok) {
-            alert("Ошибка при редактировании банка");
-            return;
-        } else {
-            const updatedBank = await response.json();
-            setBanks(banks.map((bank) => (bank.id === updatedBank.id ? updatedBank : bank)));
-            handleCloseModal();
-            setEditingBank(null);
+        editMutation.mutate({ id: editingBank.id, data });
+    };
+    const handleDeleteClick = async (id: number) => {
+        if (window.confirm("Вы уверены, что хотите удалить этот банк?")) {
+            deleteMutation.mutate(id);
         }
+    };
+    const handleCreateBankClick = async (data: BankFormData) => {
+        createMutation.mutate(data);
+    };
+
+    if (isLoading) {
+        return <div>Загрузка...</div>;
     }
-
-    async function handleCreateBank(data: BankFormData) {
-        const response = await fetch(`/api/banks`, {
-            method: "POST",
-            body: JSON.stringify(data),
-            headers: { "Content-Type": "application/json" },
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            alert(`Ошибка при создании: ${error.error}`);
-        } else {
-            const newBank = await response.json();
-            setBanks([...banks, newBank]);
-            setIsCreateModalOpen(false);
-        }
+    if (isError) {
+        return <div>Ошибка: {error.message}</div>;
     }
     return (
         <>
@@ -116,41 +116,42 @@ export const BankManager = ({ initialBanks }: BankManagerProps) => {
                     </tr>
                 </thead>
                 <tbody>
-                    {banks.map((bank) => (
-                        <tr key={bank.id}>
-                            <td style={tdStyles}>{bank.name}</td>
-                            <td style={tdStyles}>{bank.country}</td>
-                            <td style={tdStyles}>{bank.BIC || "—"}</td>
-                            <td style={tdStyles}>{bank.SWIFT || "—"}</td>
-                            <td style={actionsCellStyles}>
-                                <button
-                                    onClick={() => handleDelete(bank.id)}
-                                    style={{ color: "red", marginRight: "8px", cursor: "pointer" }}
-                                >
-                                    Удалить
-                                </button>
-                                <button onClick={() => openEditModal(bank)}>Изменить</button>
-                                {editingBank && (
-                                    <Modal isOpen={!!editingBank} onClose={handleCloseModal}>
-                                        <BankForm
-                                            bank={editingBank}
-                                            onFormSubmit={handleEditBank}
-                                            onCancel={() => setEditingBank(null)}
-                                        />
-                                    </Modal>
-                                )}
-                                {isCreateModalOpen && (
-                                    <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)}>
-                                        <BankForm
-                                            bank={null}
-                                            onFormSubmit={handleCreateBank}
-                                            onCancel={() => setIsCreateModalOpen(false)}
-                                        />
-                                    </Modal>
-                                )}
-                            </td>
-                        </tr>
-                    ))}
+                    {banks &&
+                        banks.map((bank) => (
+                            <tr key={bank.id}>
+                                <td style={tdStyles}>{bank.name}</td>
+                                <td style={tdStyles}>{bank.country}</td>
+                                <td style={tdStyles}>{bank.BIC || "—"}</td>
+                                <td style={tdStyles}>{bank.SWIFT || "—"}</td>
+                                <td style={actionsCellStyles}>
+                                    <button
+                                        onClick={() => handleDeleteClick(bank.id)}
+                                        style={{ color: "red", marginRight: "8px", cursor: "pointer" }}
+                                    >
+                                        Удалить
+                                    </button>
+                                    <button onClick={() => openEditModal(bank)}>Изменить</button>
+                                    {editingBank && (
+                                        <Modal isOpen={!!editingBank} onClose={handleCloseModal}>
+                                            <BankForm
+                                                bank={editingBank}
+                                                onFormSubmit={handleUpdateBankClick}
+                                                onCancel={() => setEditingBank(null)}
+                                            />
+                                        </Modal>
+                                    )}
+                                    {isCreateModalOpen && (
+                                        <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)}>
+                                            <BankForm
+                                                bank={null}
+                                                onFormSubmit={handleCreateBankClick}
+                                                onCancel={() => setIsCreateModalOpen(false)}
+                                            />
+                                        </Modal>
+                                    )}
+                                </td>
+                            </tr>
+                        ))}
                 </tbody>
             </table>
         </>

@@ -17,14 +17,10 @@ export default async function CompaniesPage() {
         redirect("/dashboard");
     }
 
-    const companies = await prisma.company.findMany({
-        orderBy: { name: "asc" },
-    });
-
     return (
         <div style={{ display: "flex", justifyContent: "center", alignItems: "center", flexDirection: "column" }}>
             <h1>Управление компаниями</h1>
-            <CompanyManager initialCompanies={companies} />
+            <CompanyManager />
         </div>
     );
 }

@@ -16,14 +16,10 @@ export default async function BanksPage() {
         redirect("/dashboard");
     }
 
-    const banks = await prisma.bank.findMany({
-        orderBy: { name: "asc" },
-    });
-
     return (
         <div style={{ display: "flex", justifyContent: "center", alignItems: "center", flexDirection: "column" }}>
             <h1>Управление банками</h1>
-            <BankManager initialBanks={banks} />
+            <BankManager />
         </div>
     );
 }
