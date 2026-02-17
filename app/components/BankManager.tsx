@@ -85,7 +85,7 @@ export const BankManager = () => {
                     Добавить новый банк
                 </Button>
             </div>
-            <table className="w-11/12 mx-auto mt-4 border-collapse text-sm">
+            <table className="w-10/12 mx-auto mt-4 border-collapse text-sm">
                 <thead>
                     <tr className="bg-gray-100">
                         <th className="border border-gray-300 px-3 py-2 text-left">Название</th>
