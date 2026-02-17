@@ -11,6 +11,7 @@ import { getCompanies } from "@/lib/api/company";
 import { createLc, deleteLc, getLcs, updateLc } from "@/lib/api/lc";
 import { queryClient } from "@/lib/query-client";
 import { Bank, Company, LetterOfCredit } from "@prisma/client";
+import { Button } from "../shared/Button";
 
 // Описывает "сырой" объект, который приходит от API (`getLcs`)
 export type RawLc = LetterOfCredit & {
@@ -140,23 +141,25 @@ export const LcManager = ({ session }: LcManagerProps) => {
 
     return (
         <>
-            <div style={{ marginBottom: "1rem" }}>
-                <button onClick={openCreateModal}>+ Добавить аккредитив</button>
+            <div className="my-4">
+                <Button size="md" variant="new" onClick={openCreateModal}>
+                    Добавить аккредитив
+                </Button>
             </div>
-            <table>
+            <table className="w-10/12 mx-auto mt-4 border-collapse text-sm">
                 <thead>
                     <tr>
-                        <th>Номер аккредитива</th>
-                        <th>Сумма</th>
-                        <th>Валюта</th>
-                        <th>Дата выпуска</th>
-                        <th>Дата истечения</th>
-                        <th>подтвержденный</th>
-                        <th>Аппликант</th>
-                        <th>Бенефициар</th>
-                        <th>Банк эмитент</th>
-                        <th>Банк авизующий</th>
-                        <th>Действия</th>
+                        <th className="border border-gray-300 px-3 py-2 text-left">Сумма</th>
+                        <th className="border border-gray-300 px-3 py-2 text-left">Номер аккредитива</th>
+                        <th className="border border-gray-300 px-3 py-2 text-left">Валюта</th>
+                        <th className="border border-gray-300 px-3 py-2 text-left">Дата выпуска</th>
+                        <th className="border border-gray-300 px-3 py-2 text-left">Дата истечения</th>
+                        <th className="border border-gray-300 px-3 py-2 text-left">подтвержденный</th>
+                        <th className="border border-gray-300 px-3 py-2 text-left">Аппликант</th>
+                        <th className="border border-gray-300 px-3 py-2 text-left">Бенефициар</th>
+                        <th className="border border-gray-300 px-3 py-2 text-left">Банк эмитент</th>
+                        <th className="border border-gray-300 px-3 py-2 text-left">Банк авизующий</th>
+                        <th className="border border-gray-300 px-3 py-2 text-center w-40">Действия</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -167,27 +170,30 @@ export const LcManager = ({ session }: LcManagerProps) => {
 
                         return (
                             <tr key={lc.id}>
-                                <td>{lc.referenceNumber}</td>
-                                <td>{lc.amount}</td>
-                                <td>{lc.currency}</td>
-                                <td>{lc.issueDate}</td>
-                                <td>{lc.expiryDate}</td>
-                                <td>{lc.isConfirmed ? "Да" : "Нет"}</td>
-                                <td>{lc.applicantName}</td>
-                                <td>{lc.beneficiaryName}</td>
-                                <td>{lc.issuingBankName}</td>
-                                <td>{lc.advisingBankName || "—"}</td>
-                                <td>
+                                <td className="border border-gray-300 px-3 py-2 text-left">{lc.referenceNumber}</td>
+                                <td className="border border-gray-300 px-3 py-2 text-left">{lc.amount}</td>
+                                <td className="border border-gray-300 px-3 py-2 text-left">{lc.currency}</td>
+                                <td className="border border-gray-300 px-3 py-2 text-left">{lc.issueDate}</td>
+                                <td className="border border-gray-300 px-3 py-2 text-left">{lc.expiryDate}</td>
+                                <td className="border border-gray-300 px-3 py-2 text-left">
+                                    {lc.isConfirmed ? "Да" : "Нет"}
+                                </td>
+                                <td className="border border-gray-300 px-3 py-2 text-left">{lc.applicantName}</td>
+                                <td className="border border-gray-300 px-3 py-2 text-left">{lc.beneficiaryName}</td>
+                                <td className="border border-gray-300 px-3 py-2 text-left">{lc.issuingBankName}</td>
+                                <td className="border border-gray-300 px-3 py-2 text-left">
+                                    {lc.advisingBankName || "—"}
+                                </td>
+                                <td className="border border-gray-300 px-3 py-2 text-center w-40">
                                     {canEditOrDelete ? (
-                                        <>
-                                            <button
-                                                onClick={() => handleDeleteClick(lc.id)}
-                                                style={{ color: "red", marginRight: "8px", cursor: "pointer" }}
-                                            >
+                                        <div className="flex items-center justify-center gap-2">
+                                            <Button onClick={() => handleDeleteClick(lc.id)} size="sm" variant="danger">
                                                 Удалить
-                                            </button>
-                                            <button onClick={() => openEditModal(lc)}>Изменить</button>
-                                        </>
+                                            </Button>
+                                            <Button size="sm" variant="new" onClick={() => openEditModal(lc)}>
+                                                Изменить
+                                            </Button>
+                                        </div>
                                     ) : (
                                         <p>Нет прав на изменение/удаление</p>
                                     )}
