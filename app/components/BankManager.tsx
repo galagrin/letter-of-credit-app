@@ -11,29 +11,6 @@ import { createBank, deleteBank, getBanks, updateBank } from "@/lib/api/bank";
 import { BankFormData } from "@/types/data";
 import { Button } from "../shared/Button";
 
-// Стили для таблицы (todo: вынести в CSS)
-const tableStyles = {
-    width: "90%",
-    borderCollapse: "collapse" as const, // 'as const'  для TypeScript
-    margin: "0 auto",
-    marginTop: "1rem",
-};
-const thStyles = {
-    border: "1px solid #ddd",
-    padding: "8px",
-    textAlign: "left" as const,
-    backgroundColor: "#f2f2f2",
-};
-const tdStyles = {
-    border: "1px solid #ddd",
-    padding: "8px",
-};
-const actionsCellStyles = {
-    ...tdStyles,
-    width: "150px",
-    textAlign: "center" as const,
-};
-
 export const BankManager = () => {
     const [editingBank, setEditingBank] = useState<Bank | null>(null);
     const {
@@ -108,55 +85,58 @@ export const BankManager = () => {
                     Добавить новый банк
                 </Button>
             </div>
-            <table style={tableStyles}>
+            <table className="w-11/12 mx-auto mt-4 border-collapse text-sm">
                 <thead>
-                    <tr>
-                        <th style={thStyles}>Название</th>
-                        <th style={thStyles}>Страна</th>
-                        <th style={thStyles}>БИК</th>
-                        <th style={thStyles}>SWIFT</th>
-                        <th style={thStyles}>Действия</th>
+                    <tr className="bg-gray-100">
+                        <th className="border border-gray-300 px-3 py-2 text-left">Название</th>
+                        <th className="border border-gray-300 px-3 py-2 text-left">Страна</th>
+                        <th className="border border-gray-300 px-3 py-2 text-left">БИК</th>
+                        <th className="border border-gray-300 px-3 py-2 text-left">SWIFT</th>
+                        <th className="border border-gray-300 px-3 py-2 text-center w-40">Действия</th>
                     </tr>
                 </thead>
                 <tbody>
                     {banks &&
                         banks.map((bank) => (
-                            <tr key={bank.id}>
-                                <td style={tdStyles}>{bank.name}</td>
-                                <td style={tdStyles}>{bank.country}</td>
-                                <td style={tdStyles}>{bank.BIC || "—"}</td>
-                                <td style={tdStyles}>{bank.SWIFT || "—"}</td>
-                                <td style={actionsCellStyles}>
-                                    <button
-                                        onClick={() => handleDeleteClick(bank.id)}
-                                        style={{ color: "red", marginRight: "8px", cursor: "pointer" }}
-                                    >
-                                        Удалить
-                                    </button>
-                                    <button onClick={() => openEditModal(bank)}>Изменить</button>
-                                    {editingBank && (
-                                        <Modal isOpen={!!editingBank} onClose={handleCloseModal}>
-                                            <BankForm
-                                                bank={editingBank}
-                                                onFormSubmit={handleUpdateBankClick}
-                                                onCancel={() => setEditingBank(null)}
-                                            />
-                                        </Modal>
-                                    )}
-                                    {isCreateModalOpen && (
-                                        <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)}>
-                                            <BankForm
-                                                bank={null}
-                                                onFormSubmit={handleCreateBankClick}
-                                                onCancel={() => setIsCreateModalOpen(false)}
-                                            />
-                                        </Modal>
-                                    )}
+                            <tr key={bank.id} className="odd:bg-white even:bg-gray-50">
+                                <td className="border border-gray-300 px-3 py-2">{bank.name}</td>
+                                <td className="border border-gray-300 px-3 py-2">{bank.country}</td>
+                                <td className="border border-gray-300 px-3 py-2">{bank.BIC || "—"}</td>
+                                <td className="border border-gray-300 px-3 py-2">{bank.SWIFT || "—"}</td>
+                                <td className="border border-gray-300 px-3 py-2 text-center w-40">
+                                    <div className="flex items-center justify-center gap-2">
+                                        <Button size="sm" variant="danger" onClick={() => handleDeleteClick(bank.id)}>
+                                            Удалить
+                                        </Button>
+
+                                        <Button size="sm" variant="new" onClick={() => openEditModal(bank)}>
+                                            Изменить
+                                        </Button>
+                                    </div>
                                 </td>
                             </tr>
                         ))}
                 </tbody>
             </table>
+
+            {editingBank && (
+                <Modal isOpen={!!editingBank} onClose={handleCloseModal}>
+                    <BankForm
+                        bank={editingBank}
+                        onFormSubmit={handleUpdateBankClick}
+                        onCancel={() => setEditingBank(null)}
+                    />
+                </Modal>
+            )}
+            {isCreateModalOpen && (
+                <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)}>
+                    <BankForm
+                        bank={null}
+                        onFormSubmit={handleCreateBankClick}
+                        onCancel={() => setIsCreateModalOpen(false)}
+                    />
+                </Modal>
+            )}
         </>
     );
 };
