@@ -22,6 +22,7 @@ export const BankManager = () => {
         queryFn: getBanks,
         queryKey: ["banks"],
     });
+    const [entityToDelete, setEntityToDelete] = useState<Bank | null>(null);
 
     const { reset } = useForm<BankFormData>();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -30,6 +31,10 @@ export const BankManager = () => {
         mutationFn: deleteBank,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["banks"] });
+            setEntityToDelete(null);
+        },
+        onError: (err) => {
+            console.error("delete error", err);
         },
     });
 
@@ -63,11 +68,17 @@ export const BankManager = () => {
         if (!editingBank) return;
         editMutation.mutate({ id: editingBank.id, data });
     };
-    const handleDeleteClick = async (id: number) => {
-        if (window.confirm("Вы уверены, что хотите удалить этот банк?")) {
-            deleteMutation.mutate(id);
-        }
+
+    // обработчик удаления
+    const askDeleteEntity = (entity: Bank) => {
+        setEntityToDelete(entity);
     };
+    //открытие модального окна и удаление
+    const confirmDeletion = () => {
+        if (!entityToDelete) return;
+        deleteMutation.mutate(entityToDelete.id);
+    };
+
     const handleCreateBankClick = async (data: BankFormData) => {
         createMutation.mutate(data);
     };
@@ -105,7 +116,7 @@ export const BankManager = () => {
                                 <td className="border border-gray-300 px-3 py-2">{bank.SWIFT || "—"}</td>
                                 <td className="border border-gray-300 px-3 py-2 text-center w-40">
                                     <div className="flex items-center justify-center gap-2">
-                                        <Button size="sm" variant="danger" onClick={() => handleDeleteClick(bank.id)}>
+                                        <Button size="sm" variant="danger" onClick={() => askDeleteEntity(bank)}>
                                             Удалить
                                         </Button>
 
@@ -135,6 +146,29 @@ export const BankManager = () => {
                         onFormSubmit={handleCreateBankClick}
                         onCancel={() => setIsCreateModalOpen(false)}
                     />
+                </Modal>
+            )}
+
+            {entityToDelete && (
+                <Modal isOpen={!!entityToDelete} onClose={() => setEntityToDelete(null)}>
+                    <div className="space-y-4">
+                        <h2 className="text-lg font-semibold text-center">Удалить запись?</h2>
+
+                        <p className="text-sm text-gray-700 text-center">
+                            Вы действительно хотите удалить <span className="font-medium">{entityToDelete.name}</span>?
+                            Это действие нельзя будет отменить.
+                        </p>
+
+                        <div className="flex justify-center gap-3 pt-2">
+                            <Button size="sm" variant="primary" onClick={() => setEntityToDelete(null)}>
+                                Отмена
+                            </Button>
+
+                            <Button size="sm" variant="danger" onClick={confirmDeletion}>
+                                Удалить
+                            </Button>
+                        </div>
+                    </div>
                 </Modal>
             )}
         </>
