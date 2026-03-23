@@ -6,23 +6,32 @@ export default async function HomePage() {
     const session = await getServerSession(authOptions);
 
     return (
-        <div style={{ padding: "2rem", maxWidth: "600px", margin: "2rem auto", textAlign: "center" }}>
-            <h1>Добро пожаловать в LC-App!</h1>
+        <div className="text-center">
+            <h1 className="text-2xl font-semibold mb-6">Добро пожаловать в LC-App!</h1>
             {session ? (
-                <div>
-                    <h2>Вы вошли как: {session.user?.name || session.user?.email}</h2>
-                    <p>Ваша роль: {session.user?.role}</p>
-                    <Link href="/dashboard" style={{ color: "blue", marginTop: "1rem", display: "inline-block" }}>
+                <div className="space-y-2">
+                    <h2 className="text-lg font-medium">
+                        Вы вошли как: <span className="font-semibold">{session.user?.name || session.user?.email}</span>
+                    </h2>
+                    <p className="text-sm text-gray-600">
+                        Ваша роль: <span className="font-semibold">{session.user?.role}</span>
+                    </p>
+                    <Link
+                        href="/dashboard"
+                        className="mt-4 inline-block text-blue-600 hover:text-blue-700 hover:underline"
+                    >
                         Перейти на основную панель
                     </Link>
                 </div>
             ) : (
-                <div>
-                    <h2>Вы не авторизованы.</h2>
-                    <p>Пожалуйста, войдите в систему, чтобы получить доступ к приложению.</p>
+                <div className="space-y-2">
+                    <h2 className="text-lg font-medium">Вы не авторизованы.</h2>
+                    <p className="text-sm text-gray-600">
+                        Пожалуйста, войдите в систему, чтобы получить доступ к приложению.
+                    </p>
                     <Link
                         href="/api/auth/signin"
-                        style={{ color: "blue", marginTop: "1rem", display: "inline-block", cursor: "pointer" }}
+                        className="mt-4 inline-block text-blue-600 hover:text-blue-700 hover:underline cursor-pointer"
                     >
                         Перейти к странице входа
                     </Link>

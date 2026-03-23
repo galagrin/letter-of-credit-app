@@ -5,35 +5,17 @@ type ModalProps = {
     onClose: () => void;
     children: React.ReactNode;
 };
-// Стили для подложки
-const OVERLAY_STYLES: React.CSSProperties = {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.2)",
-    zIndex: 1000, // Должно быть поверх всего
-};
-
-// Стили для самого окна
-const MODAL_STYLES: React.CSSProperties = {
-    position: "fixed",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)", // Центрируем окно
-    backgroundColor: "#FFF",
-    padding: "50px",
-    zIndex: 1000,
-    borderRadius: "8px",
-};
 
 export const Modal = ({ isOpen, onClose, children }: ModalProps) => {
     if (!isOpen) return null;
 
     return createPortal(
-        <div onClick={onClose} style={OVERLAY_STYLES}>
-            <div onClick={(e) => e.stopPropagation()} style={MODAL_STYLES}>
+        <div onClick={onClose} className="fixed inset-0 z-50 bg-black/20 flex items-center justify-center">
+            <div
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white rounded-lg p-8 shadow-lg max-w-lg w-full mx-4 transform transition-all duration-200
+             animate-[fadeIn_0.4s_ease-out]"
+            >
                 {children}
             </div>
         </div>,

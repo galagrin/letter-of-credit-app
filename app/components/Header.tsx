@@ -1,39 +1,34 @@
 "use client";
 import { signIn, signOut, useSession } from "next-auth/react";
 import Link from "next/link";
+import { Button } from "../shared/Button";
 
 export const Header = () => {
     const { data: session, status } = useSession();
 
     return (
-        <header
-            style={{
-                padding: "1rem",
-                borderBottom: "1px solid #ccc",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-            }}
-        >
-            <Link href="/">
-                <span>LC-App</span>
+        <header className="flex items-center justify-between border-b border-gray-300 px-4 py-3">
+            <Link href="/" className="text-lg font-semibold">
+                LC-App
             </Link>
             <div>
-                {status === "loading" && <p>Загрузка...</p>}
+                {status === "loading" && <p className="text-sm text-gray-500">Загрузка...</p>}
 
                 {status === "authenticated" && (
-                    <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-                        <p>Привет, {session.user?.name || session.user?.email}!</p>
-                        <button style={{ cursor: "pointer" }} onClick={() => signOut()}>
+                    <div className="flex items-center gap-4">
+                        <p className="text-sm">
+                            Привет, <span className="font-medium">{session.user?.name || session.user?.email}</span>!
+                        </p>
+                        <Button variant="danger" size="sm" onClick={() => signOut()}>
                             Выйти
-                        </button>
+                        </Button>
                     </div>
                 )}
 
                 {status === "unauthenticated" && (
-                    <button style={{ cursor: "pointer" }} onClick={() => signIn()}>
+                    <Button size="sm" onClick={() => signIn()}>
                         Войти
-                    </button>
+                    </Button>
                 )}
             </div>
         </header>

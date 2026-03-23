@@ -12,11 +12,7 @@ export const authOptions: AuthOptions = {
                 password: { label: "Password", type: "password" },
             },
             async authorize(credentials) {
-                // console.log("--- Authorize function called ---");
-                // console.log("Credentials received:", credentials);
-
                 if (!credentials?.email || !credentials?.password) {
-                    // console.log("Missing email or password.");
                     return null;
                 }
                 const user = await prisma.user.findUnique({
@@ -24,13 +20,11 @@ export const authOptions: AuthOptions = {
                 });
 
                 if (!user) {
-                    // console.log(`User not found for email: ${credentials.email}`);
                     return null;
                 }
                 const isPasswordCorrect = await bcrypt.compare(credentials.password, user.passwordHash);
 
                 if (!isPasswordCorrect) {
-                    // console.log("Password comparison failed.");
                     return null;
                 }
                 return {
@@ -66,8 +60,8 @@ export const authOptions: AuthOptions = {
     },
 
     pages: {
-        signIn: '/login',
-      },
+        signIn: "/login",
+    },
 };
 const handler = NextAuth(authOptions);
 
