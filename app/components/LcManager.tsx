@@ -79,7 +79,7 @@ export const LcManager = ({ session }: LcManagerProps) => {
     const updateMutation = useMutation({
         mutationFn: updateLc,
         onSuccess: (updatedLc) => {
-            // Оптимистичное обновление UI без повторного fetch!
+            // Оптимистичное обновление UI без повторного fetch
             queryClient.setQueryData(["lcs"], (oldData: FormattedLc[] | undefined) => {
                 return oldData ? oldData.map((lc) => (lc.id === updatedLc.id ? updatedLc : lc)) : [];
             });
