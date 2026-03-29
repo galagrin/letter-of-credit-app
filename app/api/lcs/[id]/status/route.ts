@@ -18,33 +18,10 @@ export async function PATCH(request: Request, ctx: RouteParams) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const userId = parseInt(session.user.id);
+    const userRole = session.user.role;
 
     try {
-        // 2. Поиск аккредитива
-        const lcToUpdate = await prisma.letterOfCredit.findUnique({
-            where: { id },
-            select: {
-                status: true,
-                createdById: true,
-            },
-        });
-
-        // 4. Проверка прав доступа
-        if (!lcToUpdate) {
-            return NextResponse.json({ error: "Not fount" }, { status: 404 });
-        }
-        if (lcToUpdate.createdById !== userId) {
-            return NextResponse.json(
-                { error: "ТОлько создатель может отправить аккердитив на проверку" },
-                { status: 403 }
-            );
-        }
-
-        // 4a. Проверка статуса - драфт
-        if (lcToUpdate.status !== "DRAFT") {
-            return NextResponse.json({ error: "Нельзя отправить на проверку, неверный статус" }, { status: 400 });
-        }
-        // 5. Валиддация тела запроса
+        // 2. Валиддация полученного тела запроса
         const body = await request.json();
         const validation = updateStatusSchema.safeParse(body);
         if (!validation.success) {
@@ -55,17 +32,61 @@ export async function PATCH(request: Request, ctx: RouteParams) {
         }
 
         const { status: newStatus } = validation.data;
-        if (newStatus !== LcStatus.PENDING_APPROVAL) {
-            return NextResponse.json({ error: "Неверный статус" }, { status: 400 });
+        // 3. Поиск аккредитива
+        const lcToUpdate = await prisma.letterOfCredit.findUnique({
+            where: { id },
+            select: {
+                status: true,
+                createdById: true,
+            },
+        });
+        if (!lcToUpdate) {
+            return NextResponse.json({ error: "Аккредитив не найден" }, { status: 404 });
+        }
+
+        if (userRole === "ADMIN") {
+            if (lcToUpdate.status !== "PENDING_APPROVAL") {
+                return NextResponse.json(
+                    { error: "Админ может обрабатывать только со статусом 'На проверке'" },
+                    { status: 400 }
+                );
+            }
+            if (newStatus === "PENDING_APPROVAL") {
+                return NextResponse.json(
+                    {
+                        error: "Аккредитив уже отправлен на проверку",
+                    },
+                    { status: 400 }
+                );
+            }
+
+            const allowedStatuses = ["DRAFT", "ISSUED", "REJECTED"];
+            if (!allowedStatuses.includes(newStatus)) {
+                return NextResponse.json({ error: "Неверный статус" }, { status: 400 });
+            }
+        } else {
+            if (lcToUpdate.createdById !== userId) {
+                return NextResponse.json(
+                    { error: "ТОлько создатель может отправить аккердитив на проверку" },
+                    { status: 403 }
+                );
+            }
+            //  Проверка статуса - драфт
+            if (lcToUpdate.status !== "DRAFT") {
+                return NextResponse.json({ error: "Нельзя отправить на проверку, неверный статус" }, { status: 400 });
+            }
+            if (newStatus !== "PENDING_APPROVAL") {
+                return NextResponse.json(
+                    { error: "Разрешено отправлять только на проверку из черновика" },
+                    { status: 400 }
+                );
+            }
         }
 
         const updatedLC = await prisma.letterOfCredit.update({
             where: { id },
             data: { status: newStatus },
             include: {
-                applicant: true,
-                beneficiary: true,
-                issuingBank: true,
                 createdBy: { select: { id: true, name: true, email: true } },
             },
         });
