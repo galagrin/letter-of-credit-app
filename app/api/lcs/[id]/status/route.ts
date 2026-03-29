@@ -3,10 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { authOptions } from "../../../auth/[...nextauth]/route";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
-import { LcStatus } from "@prisma/client";
 
 const updateStatusSchema = z.object({
-    status: z.enum(LcStatus),
+    status: z.enum(["DRAFT", "PENDING_APPROVAL", "ISSUED", "REJECTED"]),
 });
 type RouteParams = { params: Promise<{ id: string }> };
 

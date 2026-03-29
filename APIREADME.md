@@ -9,13 +9,20 @@
     -   **Эндпоинт:** `POST /api/users`
     -   **Описание:** Создает нового пользователя. Доступен всем.
     -   **Тело запроса (JSON):**
+
         ```json
         {
             "email": "user@example.com",
             "password": "strongpassword123",
             "name": "John Doe" // опционально
         }
+        {
+            "email": "userJane@example.com",
+            "password": "strongpassword12345",
+            "name": "Jane Smith"
+        }
         ```
+
     -   **Ответы:**
         -   `201 Created`: JSON с данными пользователя (без хеша пароля).
         -   `400 Bad Request`: Неверные данные (например, невалидный email).
