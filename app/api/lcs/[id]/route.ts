@@ -33,10 +33,17 @@ export async function PUT(request: Request, ctx: RouteParams) {
     }
 
     // 2. Поиск аккредитива
-    const lcToUpdate = await prisma.letterOfCredit.findUnique({ where: { id } });
+    const lcToUpdate = await prisma.letterOfCredit.findUnique({
+        where: { id },
+        select: {
+            id: true,
+            createdById: true,
+            status: true,
+        },
+    });
 
     if (!lcToUpdate) {
-        return NextResponse.json({ error: "Not fount" }, { status: 404 });
+        return NextResponse.json({ error: "Аккредитив не найдет" }, { status: 404 });
     }
 
     // 3. Проверка прав доступа
@@ -47,6 +54,9 @@ export async function PUT(request: Request, ctx: RouteParams) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    if (lcToUpdate.status !== "DRAFT") {
+        return NextResponse.json({ error: "Редактировать можно только черновик" }, { status: 400 });
+    }
     // 4. Валидация тела запроса
     const body = await request.json();
     const validation = updateLcSchema.safeParse(body);
