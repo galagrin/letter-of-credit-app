@@ -83,6 +83,11 @@ export const LcManager = ({ session }: LcManagerProps) => {
             queryClient.setQueryData(["lcs"], (oldData: FormattedLc[] | undefined) => {
                 return oldData ? oldData.map((lc) => (lc.id === updatedLc.id ? updatedLc : lc)) : [];
             });
+            setEditingLc(null);
+        },
+        onError: (error) => {
+            console.error("Ошибка обновления:", error);
+            // TODO показать уведомление пользователю
         },
     });
 
@@ -100,6 +105,11 @@ export const LcManager = ({ session }: LcManagerProps) => {
         mutationFn: createLc,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["lcs"] });
+            setIsCreateModalOpen(false);
+        },
+        onError: (error) => {
+            console.error("Ошибка создания:", error);
+            // TODO показать уведомление пользователю
         },
     });
 
