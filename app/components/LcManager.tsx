@@ -12,6 +12,8 @@ import { createLc, deleteLc, getLcs, updateLc } from "@/lib/api/lc";
 import { queryClient } from "@/lib/query-client";
 import { Bank, Company, LetterOfCredit } from "@prisma/client";
 import { Button } from "../shared/Button";
+import { TableHead } from "../shared/TableHead";
+import { lcTableHeadData } from "@/data/staticData";
 
 // Описывает "сырой" объект, который приходит от API (`getLcs`)
 export type RawLc = LetterOfCredit & {
@@ -158,22 +160,7 @@ export const LcManager = ({ session }: LcManagerProps) => {
                 </Button>
             </div>
             <table className="w-10/12 mx-auto mt-4 border-collapse text-sm">
-                <thead>
-                    <tr>
-                        <th className="border border-gray-300 px-3 py-2 text-left">Сумма</th>
-                        <th className="border border-gray-300 px-3 py-2 text-left">Номер аккредитива</th>
-                        <th className="border border-gray-300 px-3 py-2 text-left">Валюта</th>
-                        <th className="border border-gray-300 px-3 py-2 text-left">Дата выпуска</th>
-                        <th className="border border-gray-300 px-3 py-2 text-left">Дата истечения</th>
-                        <th className="border border-gray-300 px-3 py-2 text-left">подтвержденный</th>
-                        <th className="border border-gray-300 px-3 py-2 text-left">Аппликант</th>
-                        <th className="border border-gray-300 px-3 py-2 text-left">Бенефициар</th>
-                        <th className="border border-gray-300 px-3 py-2 text-left">Банк эмитент</th>
-                        <th className="border border-gray-300 px-3 py-2 text-left">Банк авизующий</th>
-                        <th className="border border-gray-300 px-3 py-2 text-left">Статус</th>
-                        <th className="border border-gray-300 px-3 py-2 text-center w-40">Действия</th>
-                    </tr>
-                </thead>
+                <TableHead data={lcTableHeadData} />
                 <tbody>
                     {lcs.map((lc: FormattedLc) => {
                         const isOwner = lc.createdById === parseInt(session.user.id);
@@ -224,7 +211,7 @@ export const LcManager = ({ session }: LcManagerProps) => {
                                                     size="sm"
                                                     variant="new"
                                                     onClick={() => {
-                                                        /* обработчик */
+                                                        /* обработчик надо добавить*/
                                                     }}
                                                 >
                                                     На проверку

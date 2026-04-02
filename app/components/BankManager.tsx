@@ -10,6 +10,8 @@ import { queryClient } from "@/lib/query-client";
 import { createBank, deleteBank, getBanks, updateBank } from "@/lib/api/bank";
 import { BankFormData } from "@/types/data";
 import { Button } from "../shared/Button";
+import { TableHead } from "../shared/TableHead";
+import { bankTableHeadData } from "@/data/staticData";
 
 export const BankManager = () => {
     const [editingBank, setEditingBank] = useState<Bank | null>(null);
@@ -97,15 +99,7 @@ export const BankManager = () => {
                 </Button>
             </div>
             <table className="w-10/12 mx-auto mt-4 border-collapse text-sm">
-                <thead>
-                    <tr className="bg-gray-100">
-                        <th className="border border-gray-300 px-3 py-2 text-left">Название</th>
-                        <th className="border border-gray-300 px-3 py-2 text-left">Страна</th>
-                        <th className="border border-gray-300 px-3 py-2 text-left">БИК</th>
-                        <th className="border border-gray-300 px-3 py-2 text-left">SWIFT</th>
-                        <th className="border border-gray-300 px-3 py-2 text-center w-40">Действия</th>
-                    </tr>
-                </thead>
+                <TableHead data={bankTableHeadData} />
                 <tbody>
                     {banks &&
                         banks.map((bank) => (

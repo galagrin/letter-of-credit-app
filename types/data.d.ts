@@ -28,7 +28,8 @@ export type FormattedLc = {
     advisingBankName: string | null;
     advisingBankId: number | null;
     createdById: number;
-    status: string;
+    // status: string;
+    status: "DRAFT" | "PENDING_APPROVAL" | "REJECTED" | "ISSUED";
 };
 
 // Тип для данных, которые собирает форма для Аккредитива
@@ -43,5 +44,6 @@ export type FormValues = {
     beneficiaryId: number;
     issuingBankId: number;
     advisingBankId: number | null;
-    status: string;
+    // status: string;
+    status: "DRAFT" | "PENDING_APPROVAL" | "REJECTED" | "ISSUED";
 };
