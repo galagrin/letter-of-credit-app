@@ -28,6 +28,7 @@ export type FormattedLc = {
     advisingBankName: string | null;
     advisingBankId: number | null;
     createdById: number;
+    status: string;
 };
 
 // Тип для данных, которые собирает форма для Аккредитива
@@ -42,4 +43,5 @@ export type FormValues = {
     beneficiaryId: number;
     issuingBankId: number;
     advisingBankId: number | null;
+    status: string;
 };

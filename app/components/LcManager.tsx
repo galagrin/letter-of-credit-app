@@ -146,6 +146,7 @@ export const LcManager = ({ session }: LcManagerProps) => {
             beneficiaryId: lc.beneficiaryId,
             issuingBankId: lc.issuingBankId,
             advisingBankId: lc.advisingBankId,
+            status: lc.status,
         };
     };
 
@@ -169,6 +170,7 @@ export const LcManager = ({ session }: LcManagerProps) => {
                         <th className="border border-gray-300 px-3 py-2 text-left">Бенефициар</th>
                         <th className="border border-gray-300 px-3 py-2 text-left">Банк эмитент</th>
                         <th className="border border-gray-300 px-3 py-2 text-left">Банк авизующий</th>
+                        <th className="border border-gray-300 px-3 py-2 text-left">Статус</th>
                         <th className="border border-gray-300 px-3 py-2 text-center w-40">Действия</th>
                     </tr>
                 </thead>
@@ -177,6 +179,9 @@ export const LcManager = ({ session }: LcManagerProps) => {
                         const isOwner = lc.createdById === parseInt(session.user.id);
                         const isAdmin = session.user.role === "ADMIN";
                         const canEditOrDelete = isOwner || isAdmin;
+                        //пока для тестов, потом убрать (isAdmin && lc.status === "ISSUED")
+                        const hasRightToDeletion =
+                            (isAdmin && lc.status === "ISSUED") || (isOwner && lc.status === "DRAFT");
 
                         return (
                             <tr key={lc.id}>
@@ -194,15 +199,37 @@ export const LcManager = ({ session }: LcManagerProps) => {
                                 <td className="border border-gray-300 px-3 py-2 text-left">
                                     {lc.advisingBankName || "—"}
                                 </td>
+                                <td className="border border-gray-300 px-3 py-2 text-left">{lc.status}</td>
                                 <td className="border border-gray-300 px-3 py-2 text-center w-40">
                                     {canEditOrDelete ? (
-                                        <div className="flex items-center justify-center gap-2">
-                                            <Button onClick={() => handleDeleteClick(lc.id)} size="sm" variant="danger">
-                                                Удалить
-                                            </Button>
-                                            <Button size="sm" variant="new" onClick={() => openEditModal(lc)}>
-                                                Изменить
-                                            </Button>
+                                        <div className="flex flex-col items-center justify-center gap-2">
+                                            <div className="flex gap-2">
+                                                {hasRightToDeletion && (
+                                                    <Button
+                                                        onClick={() => handleDeleteClick(lc.id)}
+                                                        size="sm"
+                                                        variant="danger"
+                                                    >
+                                                        Удалить
+                                                    </Button>
+                                                )}
+                                                {lc.status !== "ISSUED" && (
+                                                    <Button size="sm" variant="new" onClick={() => openEditModal(lc)}>
+                                                        Изменить
+                                                    </Button>
+                                                )}
+                                            </div>
+                                            {lc.status === "DRAFT" && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="new"
+                                                    onClick={() => {
+                                                        /* обработчик */
+                                                    }}
+                                                >
+                                                    На проверку
+                                                </Button>
+                                            )}
                                         </div>
                                     ) : (
                                         <p>Нет прав на изменение/удаление</p>
