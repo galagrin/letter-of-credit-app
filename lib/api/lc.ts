@@ -92,3 +92,18 @@ export const createLc = async (formData: FormValues) => {
     };
     return formattedNewLc;
 };
+
+export const sendLcToApproval = async (id: string) => {
+    const dataToSend = {
+        id: id,
+        status: "PENDING_APPROVAL",
+    };
+    const response = await fetch(`/api/lcs/${id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify(dataToSend),
+        headers: { "Content-Type": "application/json" },
+    });
+    if (!response.ok) {
+        throw new Error(`Ошибка при удалении аккредитива`);
+    }
+};

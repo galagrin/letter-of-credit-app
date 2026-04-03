@@ -8,7 +8,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { FormattedLc, FormValues } from "@/types/data";
 import { getBanks } from "@/lib/api/bank";
 import { getCompanies } from "@/lib/api/company";
-import { createLc, deleteLc, getLcs, updateLc } from "@/lib/api/lc";
+import { createLc, deleteLc, getLcs, sendLcToApproval, updateLc } from "@/lib/api/lc";
 import { queryClient } from "@/lib/query-client";
 import { Bank, Company, LetterOfCredit } from "@prisma/client";
 import { Button } from "../shared/Button";
@@ -67,12 +67,28 @@ export const LcManager = ({ session }: LcManagerProps) => {
         },
     });
 
+    const sendToApprovalMutation = useMutation({
+        mutationFn: sendLcToApproval,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["lcs"] });
+        },
+        onError: (error) => {
+            console.error("Ошибка обновления:", error);
+            // TODO показать уведомление пользователю
+        },
+    });
+
     const handleDeleteClick = (id: string) => {
         if (window.confirm("Вы уверены, что хотите удалить этот аккредитив?")) {
             deleteMutation.mutate(id);
         }
     };
 
+    const handleSendToApprovalClick = (id: string) => {
+        if (window.confirm("Вы уверены, что хотите отправить аккредитив на проверку?")) {
+            sendToApprovalMutation.mutate(id);
+        }
+    };
     const handlaCloseModal = () => {
         setEditingLc(null);
         setIsCreateModalOpen(false);
@@ -200,18 +216,23 @@ export const LcManager = ({ session }: LcManagerProps) => {
                                                         Удалить
                                                     </Button>
                                                 )}
-                                                {lc.status !== "ISSUED" && (
-                                                    <Button size="sm" variant="new" onClick={() => openEditModal(lc)}>
-                                                        Изменить
-                                                    </Button>
-                                                )}
+                                                {lc.status === "ISSUED" ||
+                                                    (lc.status !== "PENDING_APPROVAL" && (
+                                                        <Button
+                                                            size="sm"
+                                                            variant="new"
+                                                            onClick={() => openEditModal(lc)}
+                                                        >
+                                                            Изменить
+                                                        </Button>
+                                                    ))}
                                             </div>
                                             {lc.status === "DRAFT" && (
                                                 <Button
                                                     size="sm"
                                                     variant="new"
                                                     onClick={() => {
-                                                        /* обработчик надо добавить*/
+                                                        handleSendToApprovalClick(lc.id);
                                                     }}
                                                 >
                                                     На проверку
