@@ -104,6 +104,34 @@ export const sendLcToApproval = async (id: string) => {
         headers: { "Content-Type": "application/json" },
     });
     if (!response.ok) {
-        throw new Error(`Ошибка при удалении аккредитива`);
+        throw new Error(`Ошибка при изменении статуса аккредитива`);
+    }
+};
+export const changeStatusToIssued = async (id: string) => {
+    const dataToSend = {
+        id: id,
+        status: "ISSUED",
+    };
+    const response = await fetch(`/api/lcs/${id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify(dataToSend),
+        headers: { "Content-Type": "application/json" },
+    });
+    if (!response.ok) {
+        throw new Error(`Ошибка при изменении статуса аккредитива`);
+    }
+};
+export const changeStatusToRegected = async (id: string) => {
+    const dataToSend = {
+        id: id,
+        status: "REJECTED",
+    };
+    const response = await fetch(`/api/lcs/${id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify(dataToSend),
+        headers: { "Content-Type": "application/json" },
+    });
+    if (!response.ok) {
+        throw new Error(`Ошибка при изменении статуса аккредитива`);
     }
 };

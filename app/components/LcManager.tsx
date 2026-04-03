@@ -22,10 +22,15 @@ export type RawLc = LetterOfCredit & {
     issuingBank: Bank;
     advisingBank: Bank | null;
 };
+type StatusFilter = "ALL" | "DRAFT" | "PENDING_APPROVAL" | "ISSUED" | "REJECTED";
 interface LcManagerProps {
     session: Session;
 }
 export const LcManager = ({ session }: LcManagerProps) => {
+    const [statusFilter, setStatusFilter] = useState<StatusFilter>(
+        session.user.role === "ADMIN" ? "PENDING_APPROVAL" : "ALL"
+    );
+
     const {
         data: lcs = [],
         isError,
@@ -54,6 +59,12 @@ export const LcManager = ({ session }: LcManagerProps) => {
     const { data: companies = [] } = useQuery({
         queryKey: ["companies"],
         queryFn: getCompanies,
+    });
+
+    //фильтрация по статусу
+    const filteredLcs = lcs.filter((lc) => {
+        if (statusFilter === "ALL") return true;
+        return lc.status === statusFilter;
     });
 
     const [editingLc, setEditingLc] = useState<FormattedLc | null>(null);
@@ -170,15 +181,34 @@ export const LcManager = ({ session }: LcManagerProps) => {
 
     return (
         <>
-            <div className="my-4">
+            <div className="my-4 flex flex-col gap-4 items-center">
                 <Button size="md" variant="new" onClick={openCreateModal}>
                     Добавить аккредитив
                 </Button>
+                <div className="flex gap-1">
+                    {[
+                        { value: "ALL", label: "Все" },
+                        { value: "DRAFT", label: "Черновики" },
+                        { value: "PENDING_APPROVAL", label: "На проверке" },
+                        { value: "ISSUED", label: "Выпущенные" },
+                        { value: "REJECTED", label: "Отклонённые" },
+                    ].map((item) => (
+                        <Button
+                            key={item.value}
+                            size="sm"
+                            variant="filter"
+                            isActive={statusFilter === item.value}
+                            onClick={() => setStatusFilter(item.value as StatusFilter)}
+                        >
+                            {item.label}
+                        </Button>
+                    ))}
+                </div>
             </div>
             <table className="w-10/12 mx-auto mt-4 border-collapse text-sm">
                 <TableHead data={lcTableHeadData} />
                 <tbody>
-                    {lcs.map((lc: FormattedLc) => {
+                    {filteredLcs.map((lc: FormattedLc) => {
                         const isOwner = lc.createdById === parseInt(session.user.id);
                         const isAdmin = session.user.role === "ADMIN";
                         const canEditOrDelete = isOwner || isAdmin;

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z, ZodType } from "zod";
-import { prisma } from "@/lib/prisma"; //экземпляр клиента Prisma
-import { Prisma } from "@prisma/client"; //пространство имен типов из библиотеки Prisma
+import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
