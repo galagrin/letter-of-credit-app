@@ -93,45 +93,21 @@ export const createLc = async (formData: FormValues) => {
     return formattedNewLc;
 };
 
-export const sendLcToApproval = async (id: string) => {
-    const dataToSend = {
-        id: id,
-        status: "PENDING_APPROVAL",
-    };
+const changeStatus = async (id: string, status: string) => {
     const response = await fetch(`/api/lcs/${id}/status`, {
         method: "PATCH",
-        body: JSON.stringify(dataToSend),
+        body: JSON.stringify({ status }),
         headers: { "Content-Type": "application/json" },
     });
     if (!response.ok) {
         throw new Error(`Ошибка при изменении статуса аккредитива`);
     }
+    return response.json();
 };
-export const changeStatusToIssued = async (id: string) => {
-    const dataToSend = {
-        id: id,
-        status: "ISSUED",
-    };
-    const response = await fetch(`/api/lcs/${id}/status`, {
-        method: "PATCH",
-        body: JSON.stringify(dataToSend),
-        headers: { "Content-Type": "application/json" },
-    });
-    if (!response.ok) {
-        throw new Error(`Ошибка при изменении статуса аккредитива`);
-    }
-};
-export const changeStatusToRegected = async (id: string) => {
-    const dataToSend = {
-        id: id,
-        status: "REJECTED",
-    };
-    const response = await fetch(`/api/lcs/${id}/status`, {
-        method: "PATCH",
-        body: JSON.stringify(dataToSend),
-        headers: { "Content-Type": "application/json" },
-    });
-    if (!response.ok) {
-        throw new Error(`Ошибка при изменении статуса аккредитива`);
-    }
-};
+export const sendLcToApproval = (id: string) => changeStatus(id, "PENDING_APPROVAL");
+
+export const changeStatusToIssued = (id: string) => changeStatus(id, "ISSUED");
+
+export const changeStatusToRegected = (id: string) => changeStatus(id, "REJECTED");
+
+export const changeStatusToDraft = (id: string) => changeStatus(id, "DRAFT");

@@ -8,7 +8,16 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { FormattedLc, FormValues } from "@/types/data";
 import { getBanks } from "@/lib/api/bank";
 import { getCompanies } from "@/lib/api/company";
-import { createLc, deleteLc, getLcs, sendLcToApproval, updateLc } from "@/lib/api/lc";
+import {
+    changeStatusToDraft,
+    changeStatusToIssued,
+    changeStatusToRegected,
+    createLc,
+    deleteLc,
+    getLcs,
+    sendLcToApproval,
+    updateLc,
+} from "@/lib/api/lc";
 import { queryClient } from "@/lib/query-client";
 import { Bank, Company, LetterOfCredit } from "@prisma/client";
 import { Button } from "../shared/Button";
@@ -77,6 +86,11 @@ export const LcManager = ({ session }: LcManagerProps) => {
             queryClient.invalidateQueries({ queryKey: ["lcs"] });
         },
     });
+    const handleDeleteClick = (id: string) => {
+        if (window.confirm("Вы уверены, что хотите удалить этот аккредитив?")) {
+            deleteMutation.mutate(id);
+        }
+    };
 
     const sendToApprovalMutation = useMutation({
         mutationFn: sendLcToApproval,
@@ -89,12 +103,6 @@ export const LcManager = ({ session }: LcManagerProps) => {
         },
     });
 
-    const handleDeleteClick = (id: string) => {
-        if (window.confirm("Вы уверены, что хотите удалить этот аккредитив?")) {
-            deleteMutation.mutate(id);
-        }
-    };
-
     const handleSendToApprovalClick = (id: string) => {
         if (window.confirm("Вы уверены, что хотите отправить аккредитив на проверку?")) {
             sendToApprovalMutation.mutate(id);
@@ -105,6 +113,21 @@ export const LcManager = ({ session }: LcManagerProps) => {
         setIsCreateModalOpen(false);
     };
 
+    const approveMutation = useMutation({
+        mutationFn: changeStatusToIssued,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["lcs"] });
+        },
+        onError: (error) => {
+            console.error("Ошибка выпуска аккредитива:", error);
+            // TODO показать уведомление пользователю
+        },
+    });
+    const handleApproveClick = (id: string) => {
+        if (window.confirm("Вы уверены, что хотите выпустить аккредитив?")) {
+            approveMutation.mutate(id);
+        }
+    };
     const updateMutation = useMutation({
         mutationFn: updateLc,
         onSuccess: (updatedLc) => {
@@ -119,11 +142,42 @@ export const LcManager = ({ session }: LcManagerProps) => {
             // TODO показать уведомление пользователю
         },
     });
-
     const handleUpdateSubmit = async (formData: FormValues) => {
         if (!editingLc) return;
         updateMutation.mutate({ id: editingLc.id, formData });
     };
+
+    const rejectMutation = useMutation({
+        mutationFn: changeStatusToRegected,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["lcs"] });
+        },
+        onError: (error) => {
+            console.error("Ошибка отклонения аккредитива:", error);
+            // TODO показать уведомление пользователю
+        },
+    });
+    const handleRejectClick = (id: string) => {
+        if (window.confirm("Вы уверены, что хотите отклонить аккредитив?")) {
+            rejectMutation.mutate(id);
+        }
+    };
+    const sendToDraftMutation = useMutation({
+        mutationFn: changeStatusToDraft,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["lcs"] });
+        },
+        onError: (error) => {
+            console.error("Ошибка возврата на доработку:", error);
+        },
+    });
+
+    const handleSendToDraftClick = (id: string) => {
+        if (window.confirm("Вернуть аккредитив на доработку?")) {
+            sendToDraftMutation.mutate(id);
+        }
+    };
+
     const openEditModal = (lc: FormattedLc) => {
         setEditingLc(lc);
         reset(lc);
@@ -246,28 +300,69 @@ export const LcManager = ({ session }: LcManagerProps) => {
                                                         Удалить
                                                     </Button>
                                                 )}
-                                                {lc.status === "ISSUED" ||
-                                                    (lc.status !== "PENDING_APPROVAL" && (
-                                                        <Button
-                                                            size="sm"
-                                                            variant="new"
-                                                            onClick={() => openEditModal(lc)}
-                                                        >
-                                                            Изменить
-                                                        </Button>
-                                                    ))}
+                                                {lc.status === "DRAFT" && isOwner && (
+                                                    <Button size="sm" variant="new" onClick={() => openEditModal(lc)}>
+                                                        Изменить
+                                                    </Button>
+                                                )}
+
+                                                {/* НА ПРОВЕРКУ — только создатель, только DRAFT */}
+                                                {lc.status === "DRAFT" && isOwner && (
+                                                    <Button
+                                                        size="sm"
+                                                        variant="primary"
+                                                        onClick={() => handleSendToApprovalClick(lc.id)}
+                                                    >
+                                                        На проверку
+                                                    </Button>
+                                                )}
+                                                {/* ВЕРНУТЬ В ЧЕРНОВИК — создатель, только REJECTED */}
+                                                {lc.status === "REJECTED" && isOwner && (
+                                                    <Button
+                                                        size="sm"
+                                                        variant="new"
+                                                        onClick={() => handleSendToDraftClick(lc.id)}
+                                                    >
+                                                        Вернуть в черновик
+                                                    </Button>
+                                                )}
                                             </div>
-                                            {lc.status === "DRAFT" && (
-                                                <Button
-                                                    size="sm"
-                                                    variant="new"
-                                                    onClick={() => {
-                                                        handleSendToApprovalClick(lc.id);
-                                                    }}
-                                                >
-                                                    На проверку
-                                                </Button>
+                                            {isAdmin && lc.status === "PENDING_APPROVAL" && (
+                                                <div className="flex flex-col gap-2">
+                                                    <Button
+                                                        size="sm"
+                                                        variant="new"
+                                                        onClick={() => {
+                                                            handleApproveClick(lc.id);
+                                                        }}
+                                                    >
+                                                        Выпустить
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="new"
+                                                        onClick={() => {
+                                                            handleRejectClick(lc.id);
+                                                        }}
+                                                    >
+                                                        Отклонить
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="new"
+                                                        onClick={() => handleSendToDraftClick(lc.id)}
+                                                    >
+                                                        На доработку
+                                                    </Button>
+                                                </div>
                                             )}
+                                            {/* Если нет никаких действий */}
+                                            {!hasRightToDeletion &&
+                                                lc.status !== "DRAFT" &&
+                                                !(isAdmin && lc.status === "PENDING_APPROVAL") &&
+                                                !(lc.status === "REJECTED" && isOwner) && (
+                                                    <span className="text-gray-400 text-xs">—</span>
+                                                )}
                                         </div>
                                     ) : (
                                         <p>Нет прав на изменение/удаление</p>
