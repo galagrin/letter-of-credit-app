@@ -23,6 +23,7 @@ import { Bank, Company, LetterOfCredit } from "@prisma/client";
 import { Button } from "../shared/Button";
 import { TableHead } from "../shared/TableHead";
 import { lcTableHeadData } from "@/data/staticData";
+import { StatusFilter } from "../shared/StatusFilter";
 
 // Описывает "сырой" объект, который приходит от API (`getLcs`)
 export type RawLc = LetterOfCredit & {
@@ -31,7 +32,7 @@ export type RawLc = LetterOfCredit & {
     issuingBank: Bank;
     advisingBank: Bank | null;
 };
-type StatusFilter = "ALL" | "DRAFT" | "PENDING_APPROVAL" | "ISSUED" | "REJECTED";
+// type StatusFilter = "ALL" | "DRAFT" | "PENDING_APPROVAL" | "ISSUED" | "REJECTED";
 interface LcManagerProps {
     session: Session;
 }
@@ -239,25 +240,7 @@ export const LcManager = ({ session }: LcManagerProps) => {
                 <Button size="md" variant="new" onClick={openCreateModal}>
                     Добавить аккредитив
                 </Button>
-                <div className="flex gap-1">
-                    {[
-                        { value: "ALL", label: "Все" },
-                        { value: "DRAFT", label: "Черновики" },
-                        { value: "PENDING_APPROVAL", label: "На проверке" },
-                        { value: "ISSUED", label: "Выпущенные" },
-                        { value: "REJECTED", label: "Отклонённые" },
-                    ].map((item) => (
-                        <Button
-                            key={item.value}
-                            size="sm"
-                            variant="filter"
-                            isActive={statusFilter === item.value}
-                            onClick={() => setStatusFilter(item.value as StatusFilter)}
-                        >
-                            {item.label}
-                        </Button>
-                    ))}
-                </div>
+                <StatusFilter value={statusFilter} onChange={setStatusFilter} />
             </div>
             <table className="w-10/12 mx-auto mt-4 border-collapse text-sm">
                 <TableHead data={lcTableHeadData} />
@@ -300,13 +283,14 @@ export const LcManager = ({ session }: LcManagerProps) => {
                                                         Удалить
                                                     </Button>
                                                 )}
+                                                {/*Изменить DRAFT может только создатель*/}
                                                 {lc.status === "DRAFT" && isOwner && (
                                                     <Button size="sm" variant="new" onClick={() => openEditModal(lc)}>
                                                         Изменить
                                                     </Button>
                                                 )}
 
-                                                {/* НА ПРОВЕРКУ — только создатель, только DRAFT */}
+                                                {/* На проверку — только создатель и только DRAFT */}
                                                 {lc.status === "DRAFT" && isOwner && (
                                                     <Button
                                                         size="sm"
@@ -316,7 +300,7 @@ export const LcManager = ({ session }: LcManagerProps) => {
                                                         На проверку
                                                     </Button>
                                                 )}
-                                                {/* ВЕРНУТЬ В ЧЕРНОВИК — создатель, только REJECTED */}
+                                                {/* ВЕРНУТЬ В DRAFT — только создатель, только REJECTED */}
                                                 {lc.status === "REJECTED" && isOwner && (
                                                     <Button
                                                         size="sm"
