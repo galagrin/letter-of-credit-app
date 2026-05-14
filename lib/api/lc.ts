@@ -92,3 +92,22 @@ export const createLc = async (formData: FormValues) => {
     };
     return formattedNewLc;
 };
+
+const changeStatus = async (id: string, status: string) => {
+    const response = await fetch(`/api/lcs/${id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+        headers: { "Content-Type": "application/json" },
+    });
+    if (!response.ok) {
+        throw new Error(`Ошибка при изменении статуса аккредитива`);
+    }
+    return response.json();
+};
+export const sendLcToApproval = (id: string) => changeStatus(id, "PENDING_APPROVAL");
+
+export const changeStatusToIssued = (id: string) => changeStatus(id, "ISSUED");
+
+export const changeStatusToRegected = (id: string) => changeStatus(id, "REJECTED");
+
+export const changeStatusToDraft = (id: string) => changeStatus(id, "DRAFT");

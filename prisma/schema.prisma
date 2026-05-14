@@ -14,7 +14,8 @@ model User {
   name         String?
   role         Role     @default(USER)
 
-  createdLCs   LetterOfCredit[] 
+  createdLCs   LetterOfCredit[] @relation("CreatedBy")
+  approvedLCs  LetterOfCredit[] @relation("ApprovedBy")
 
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -32,7 +33,6 @@ model Bank {
   SWIFT        String?  @unique
   country      String
 
-  // ИСПРАВЛЕНО: используем PascalCase без пробелов
   issuedLCs    LetterOfCredit[] @relation("IssuingBank")
   advisedLCs   LetterOfCredit[] @relation("AdvisingBank")
   confirmedLCs LetterOfCredit[] @relation("ConfirmingBank")
@@ -58,7 +58,7 @@ model LetterOfCredit {
   issueDate       DateTime
   expiryDate      DateTime
   isConfirmed     Boolean   @default(false)
-
+  status          LcStatus @default(DRAFT)  
 
   applicantId     Int
   applicant       Company   @relation("Applicant", fields: [applicantId], references: [id])
@@ -79,10 +79,13 @@ model LetterOfCredit {
 
 
   createdById     Int
-  createdBy       User      @relation(fields: [createdById], references: [id])
+  createdBy       User      @relation("CreatedBy", fields: [createdById], references: [id])
 
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+
+  approvedById Int?
+  approvedBy   User?    @relation("ApprovedBy", fields: [approvedById], references: [id])
 
   @@index([applicantId])
   @@index([beneficiaryId])
@@ -96,4 +99,11 @@ enum Currency {
   EUR
   CNY
   INR
+}
+
+enum LcStatus {
+  DRAFT             // Черновик (видит только создатель)
+  PENDING_APPROVAL  // Отправлен на проверку (видит чекер/админ)
+  ISSUED            // Выпущен (активный аккредитив)
+  REJECTED          // Отклонен
 }

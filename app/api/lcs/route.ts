@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { Prisma, Currency } from "@prisma/client";
+import { Prisma, Currency, LcStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "../auth/[...nextauth]/route";
 import { getServerSession } from "next-auth";
@@ -62,6 +62,7 @@ export async function POST(request: Request) {
                 issueDate,
                 expiryDate,
                 isConfirmed,
+                status: LcStatus.DRAFT,
 
                 // Связываем все ID сущностей
                 applicant: { connect: { id: applicantId } },
@@ -81,6 +82,7 @@ export async function POST(request: Request) {
                 beneficiary: true,
                 issuingBank: true,
                 advisingBank: true,
+                createdBy: { select: { id: true, name: true, email: true } },
             },
         });
         return NextResponse.json(newLc, { status: 201 });
@@ -98,17 +100,39 @@ export async function POST(request: Request) {
 
 export async function GET() {
     const session = await getServerSession(authOptions);
-    if (!session) {
+    if (!session || !session.user?.id) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const userId = parseInt(session.user.id);
+    const userRole = session.user.role;
 
-    const lcs = await prisma.letterOfCredit.findMany({
-        include: {
-            applicant: true,
-            beneficiary: true,
-            issuingBank: true,
-            advisingBank: true,
-        },
-    });
+    let lcs;
+    if (userRole !== "ADMIN") {
+        lcs = await prisma.letterOfCredit.findMany({
+            where: {
+                OR: [
+                    { createdById: userId },
+                    {
+                        AND: [{ createdById: { not: userId } }, { status: "ISSUED" }],
+                    },
+                ],
+            },
+            include: {
+                applicant: true,
+                beneficiary: true,
+                issuingBank: true,
+                advisingBank: true,
+            },
+        });
+    } else {
+        lcs = await prisma.letterOfCredit.findMany({
+            include: {
+                applicant: true,
+                beneficiary: true,
+                issuingBank: true,
+                advisingBank: true,
+            },
+        });
+    }
     return NextResponse.json(lcs);
 }

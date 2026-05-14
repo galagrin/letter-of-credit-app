@@ -8,10 +8,22 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { FormattedLc, FormValues } from "@/types/data";
 import { getBanks } from "@/lib/api/bank";
 import { getCompanies } from "@/lib/api/company";
-import { createLc, deleteLc, getLcs, updateLc } from "@/lib/api/lc";
+import {
+    changeStatusToDraft,
+    changeStatusToIssued,
+    changeStatusToRegected,
+    createLc,
+    deleteLc,
+    getLcs,
+    sendLcToApproval,
+    updateLc,
+} from "@/lib/api/lc";
 import { queryClient } from "@/lib/query-client";
 import { Bank, Company, LetterOfCredit } from "@prisma/client";
 import { Button } from "../shared/Button";
+import { TableHead } from "../shared/TableHead";
+import { lcTableHeadData } from "@/data/staticData";
+import { StatusFilter } from "../shared/StatusFilter";
 
 // Описывает "сырой" объект, который приходит от API (`getLcs`)
 export type RawLc = LetterOfCredit & {
@@ -20,10 +32,15 @@ export type RawLc = LetterOfCredit & {
     issuingBank: Bank;
     advisingBank: Bank | null;
 };
+// type StatusFilter = "ALL" | "DRAFT" | "PENDING_APPROVAL" | "ISSUED" | "REJECTED";
 interface LcManagerProps {
     session: Session;
 }
 export const LcManager = ({ session }: LcManagerProps) => {
+    const [statusFilter, setStatusFilter] = useState<StatusFilter>(
+        session.user.role === "ADMIN" ? "PENDING_APPROVAL" : "ALL"
+    );
+
     const {
         data: lcs = [],
         isError,
@@ -54,6 +71,12 @@ export const LcManager = ({ session }: LcManagerProps) => {
         queryFn: getCompanies,
     });
 
+    //фильтрация по статусу
+    const filteredLcs = lcs.filter((lc) => {
+        if (statusFilter === "ALL") return true;
+        return lc.status === statusFilter;
+    });
+
     const [editingLc, setEditingLc] = useState<FormattedLc | null>(null);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const { reset } = useForm<FormattedLc>();
@@ -64,32 +87,98 @@ export const LcManager = ({ session }: LcManagerProps) => {
             queryClient.invalidateQueries({ queryKey: ["lcs"] });
         },
     });
-
     const handleDeleteClick = (id: string) => {
         if (window.confirm("Вы уверены, что хотите удалить этот аккредитив?")) {
             deleteMutation.mutate(id);
         }
     };
 
+    const sendToApprovalMutation = useMutation({
+        mutationFn: sendLcToApproval,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["lcs"] });
+        },
+        onError: (error) => {
+            console.error("Ошибка обновления:", error);
+            // TODO показать уведомление пользователю
+        },
+    });
+
+    const handleSendToApprovalClick = (id: string) => {
+        if (window.confirm("Вы уверены, что хотите отправить аккредитив на проверку?")) {
+            sendToApprovalMutation.mutate(id);
+        }
+    };
     const handlaCloseModal = () => {
         setEditingLc(null);
         setIsCreateModalOpen(false);
     };
 
+    const approveMutation = useMutation({
+        mutationFn: changeStatusToIssued,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["lcs"] });
+        },
+        onError: (error) => {
+            console.error("Ошибка выпуска аккредитива:", error);
+            // TODO показать уведомление пользователю
+        },
+    });
+    const handleApproveClick = (id: string) => {
+        if (window.confirm("Вы уверены, что хотите выпустить аккредитив?")) {
+            approveMutation.mutate(id);
+        }
+    };
     const updateMutation = useMutation({
         mutationFn: updateLc,
         onSuccess: (updatedLc) => {
-            // Оптимистичное обновление UI без повторного fetch!
+            // Оптимистичное обновление UI без повторного fetch
             queryClient.setQueryData(["lcs"], (oldData: FormattedLc[] | undefined) => {
                 return oldData ? oldData.map((lc) => (lc.id === updatedLc.id ? updatedLc : lc)) : [];
             });
+            setEditingLc(null);
+        },
+        onError: (error) => {
+            console.error("Ошибка обновления:", error);
+            // TODO показать уведомление пользователю
         },
     });
-
     const handleUpdateSubmit = async (formData: FormValues) => {
         if (!editingLc) return;
         updateMutation.mutate({ id: editingLc.id, formData });
     };
+
+    const rejectMutation = useMutation({
+        mutationFn: changeStatusToRegected,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["lcs"] });
+        },
+        onError: (error) => {
+            console.error("Ошибка отклонения аккредитива:", error);
+            // TODO показать уведомление пользователю
+        },
+    });
+    const handleRejectClick = (id: string) => {
+        if (window.confirm("Вы уверены, что хотите отклонить аккредитив?")) {
+            rejectMutation.mutate(id);
+        }
+    };
+    const sendToDraftMutation = useMutation({
+        mutationFn: changeStatusToDraft,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["lcs"] });
+        },
+        onError: (error) => {
+            console.error("Ошибка возврата на доработку:", error);
+        },
+    });
+
+    const handleSendToDraftClick = (id: string) => {
+        if (window.confirm("Вернуть аккредитив на доработку?")) {
+            sendToDraftMutation.mutate(id);
+        }
+    };
+
     const openEditModal = (lc: FormattedLc) => {
         setEditingLc(lc);
         reset(lc);
@@ -100,6 +189,11 @@ export const LcManager = ({ session }: LcManagerProps) => {
         mutationFn: createLc,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["lcs"] });
+            setIsCreateModalOpen(false);
+        },
+        onError: (error) => {
+            console.error("Ошибка создания:", error);
+            // TODO показать уведомление пользователю
         },
     });
 
@@ -136,37 +230,28 @@ export const LcManager = ({ session }: LcManagerProps) => {
             beneficiaryId: lc.beneficiaryId,
             issuingBankId: lc.issuingBankId,
             advisingBankId: lc.advisingBankId,
+            status: lc.status,
         };
     };
 
     return (
         <>
-            <div className="my-4">
+            <div className="my-4 flex flex-col gap-4 items-center">
                 <Button size="md" variant="new" onClick={openCreateModal}>
                     Добавить аккредитив
                 </Button>
+                <StatusFilter value={statusFilter} onChange={setStatusFilter} />
             </div>
             <table className="w-10/12 mx-auto mt-4 border-collapse text-sm">
-                <thead>
-                    <tr>
-                        <th className="border border-gray-300 px-3 py-2 text-left">Сумма</th>
-                        <th className="border border-gray-300 px-3 py-2 text-left">Номер аккредитива</th>
-                        <th className="border border-gray-300 px-3 py-2 text-left">Валюта</th>
-                        <th className="border border-gray-300 px-3 py-2 text-left">Дата выпуска</th>
-                        <th className="border border-gray-300 px-3 py-2 text-left">Дата истечения</th>
-                        <th className="border border-gray-300 px-3 py-2 text-left">подтвержденный</th>
-                        <th className="border border-gray-300 px-3 py-2 text-left">Аппликант</th>
-                        <th className="border border-gray-300 px-3 py-2 text-left">Бенефициар</th>
-                        <th className="border border-gray-300 px-3 py-2 text-left">Банк эмитент</th>
-                        <th className="border border-gray-300 px-3 py-2 text-left">Банк авизующий</th>
-                        <th className="border border-gray-300 px-3 py-2 text-center w-40">Действия</th>
-                    </tr>
-                </thead>
+                <TableHead data={lcTableHeadData} />
                 <tbody>
-                    {lcs.map((lc: FormattedLc) => {
+                    {filteredLcs.map((lc: FormattedLc) => {
                         const isOwner = lc.createdById === parseInt(session.user.id);
                         const isAdmin = session.user.role === "ADMIN";
                         const canEditOrDelete = isOwner || isAdmin;
+                        //пока для тестов, потом убрать (isAdmin && lc.status === "ISSUED")
+                        const hasRightToDeletion =
+                            (isAdmin && lc.status === "ISSUED") || (isOwner && lc.status === "DRAFT");
 
                         return (
                             <tr key={lc.id}>
@@ -184,15 +269,84 @@ export const LcManager = ({ session }: LcManagerProps) => {
                                 <td className="border border-gray-300 px-3 py-2 text-left">
                                     {lc.advisingBankName || "—"}
                                 </td>
+                                <td className="border border-gray-300 px-3 py-2 text-left">{lc.status}</td>
                                 <td className="border border-gray-300 px-3 py-2 text-center w-40">
                                     {canEditOrDelete ? (
-                                        <div className="flex items-center justify-center gap-2">
-                                            <Button onClick={() => handleDeleteClick(lc.id)} size="sm" variant="danger">
-                                                Удалить
-                                            </Button>
-                                            <Button size="sm" variant="new" onClick={() => openEditModal(lc)}>
-                                                Изменить
-                                            </Button>
+                                        <div className="flex flex-col items-center justify-center gap-2">
+                                            <div className="flex gap-2">
+                                                {hasRightToDeletion && (
+                                                    <Button
+                                                        onClick={() => handleDeleteClick(lc.id)}
+                                                        size="sm"
+                                                        variant="danger"
+                                                    >
+                                                        Удалить
+                                                    </Button>
+                                                )}
+                                                {/*Изменить DRAFT может только создатель*/}
+                                                {lc.status === "DRAFT" && isOwner && (
+                                                    <Button size="sm" variant="new" onClick={() => openEditModal(lc)}>
+                                                        Изменить
+                                                    </Button>
+                                                )}
+
+                                                {/* На проверку — только создатель и только DRAFT */}
+                                                {lc.status === "DRAFT" && isOwner && (
+                                                    <Button
+                                                        size="sm"
+                                                        variant="primary"
+                                                        onClick={() => handleSendToApprovalClick(lc.id)}
+                                                    >
+                                                        На проверку
+                                                    </Button>
+                                                )}
+                                                {/* ВЕРНУТЬ В DRAFT — только создатель, только REJECTED */}
+                                                {lc.status === "REJECTED" && isOwner && (
+                                                    <Button
+                                                        size="sm"
+                                                        variant="new"
+                                                        onClick={() => handleSendToDraftClick(lc.id)}
+                                                    >
+                                                        Вернуть в черновик
+                                                    </Button>
+                                                )}
+                                            </div>
+                                            {isAdmin && lc.status === "PENDING_APPROVAL" && (
+                                                <div className="flex flex-col gap-2">
+                                                    <Button
+                                                        size="sm"
+                                                        variant="new"
+                                                        onClick={() => {
+                                                            handleApproveClick(lc.id);
+                                                        }}
+                                                    >
+                                                        Выпустить
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="new"
+                                                        onClick={() => {
+                                                            handleRejectClick(lc.id);
+                                                        }}
+                                                    >
+                                                        Отклонить
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="new"
+                                                        onClick={() => handleSendToDraftClick(lc.id)}
+                                                    >
+                                                        На доработку
+                                                    </Button>
+                                                </div>
+                                            )}
+                                            {/* Если нет никаких действий */}
+                                            {!hasRightToDeletion &&
+                                                lc.status !== "DRAFT" &&
+                                                !(isAdmin && lc.status === "PENDING_APPROVAL") &&
+                                                !(lc.status === "REJECTED" && isOwner) && (
+                                                    <span className="text-gray-400 text-xs">—</span>
+                                                )}
                                         </div>
                                     ) : (
                                         <p>Нет прав на изменение/удаление</p>

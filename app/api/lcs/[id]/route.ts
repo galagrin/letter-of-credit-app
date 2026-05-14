@@ -33,10 +33,17 @@ export async function PUT(request: Request, ctx: RouteParams) {
     }
 
     // 2. Поиск аккредитива
-    const lcToUpdate = await prisma.letterOfCredit.findUnique({ where: { id } });
+    const lcToUpdate = await prisma.letterOfCredit.findUnique({
+        where: { id },
+        select: {
+            id: true,
+            createdById: true,
+            status: true,
+        },
+    });
 
     if (!lcToUpdate) {
-        return NextResponse.json({ error: "Not fount" }, { status: 404 });
+        return NextResponse.json({ error: "Аккредитив не найдет" }, { status: 404 });
     }
 
     // 3. Проверка прав доступа
@@ -47,6 +54,9 @@ export async function PUT(request: Request, ctx: RouteParams) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    if (lcToUpdate.status !== "DRAFT") {
+        return NextResponse.json({ error: "Редактировать можно только черновик" }, { status: 400 });
+    }
     // 4. Валидация тела запроса
     const body = await request.json();
     const validation = updateLcSchema.safeParse(body);
@@ -109,7 +119,14 @@ export async function DELETE(request: Request, ctx: RouteParams) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     // 2. Поиск аккредитива
-    const lcToDelete = await prisma.letterOfCredit.findUnique({ where: { id } });
+    const lcToDelete = await prisma.letterOfCredit.findUnique({
+        where: { id },
+        select: {
+            id: true,
+            createdById: true,
+            status: true,
+        },
+    });
     if (!lcToDelete) {
         return NextResponse.json({ error: "Not fount" }, { status: 404 });
     }
@@ -117,10 +134,19 @@ export async function DELETE(request: Request, ctx: RouteParams) {
     // 3. Проверка прав доступа
     const isOwner = lcToDelete.createdById === parseInt(session.user.id);
     const isAdmin = session.user.role === "ADMIN";
-    if (!isOwner && !isAdmin) {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    let canDelete = false;
+    if (lcToDelete.status === "DRAFT" || lcToDelete.status === "REJECTED") {
+        canDelete = isOwner || isAdmin;
+    } else if (lcToDelete.status === "PENDING_APPROVAL") {
+        canDelete = isAdmin;
+    } else if (lcToDelete.status === "ISSUED") {
+        // TODO - пока это дла разработки, чтобы тестировать. Далее нужно будет удалить, чтобы выпущенный аккред никто не мог удялять
+        canDelete = isAdmin;
     }
 
+    if (!canDelete) {
+        return NextResponse.json({ error: "Нет прав на удаление аккредитива в этом статусе" }, { status: 403 });
+    }
     try {
         await prisma.letterOfCredit.delete({
             where: { id },
